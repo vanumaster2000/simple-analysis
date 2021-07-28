@@ -1,6 +1,6 @@
 # -*- coding: <utf-8> -*-
 
-# TODO Добавить UI для ввода данных подключения к БД
+# TODO: Добавить UI для ввода данных подключения к БД
 import psycopg2
 from psycopg2 import Error
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -12,17 +12,19 @@ import datetime
 import multiprocessing as mp
 
 
-# TODO Добавить генерацию красивых pdf-документов с отчетностью
-def planes_data(dataframe: pd.DataFrame) -> None:
+# TODO: Добавить генерацию красивых pdf-документов с отчетностью
+def planes_data(planes_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с бортами авиакомпании
-    :param dataframe: Pandas DataFrame с информацией о бортах
+    :param planes_dataframe: Pandas DataFrame с информацией о бортах
     :return: Ничего не возвращается (Неявный None)
     """
+
     filler('=')
+
     print()
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
-    res = [x['en'] for x in dataframe['model']]  # Получение английских наименований авиасудов
+    res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований авиасудов
     occurrences = {x: res.count(x) for x in list(set(res))}
     types = sorted([x for x in occurrences.keys()])
     print('Модели самолетов, находящихся в использовании:')
@@ -33,38 +35,63 @@ def planes_data(dataframe: pd.DataFrame) -> None:
     aircraft_by_producers = [(x, aircraft_by_producers[x]) for x in aircraft_by_producers.keys() if
                              aircraft_by_producers[x] > 0]
     aircraft_by_producers = {x: y for (x, y) in aircraft_by_producers}
+
     filler('-')
+
     print('Количество используемых самолетов по производителям:')
     for (producer, amount) in aircraft_by_producers.items():
         print(f'\t{producer}: {amount} ед.')
 
-    print()
-    filler('=')
-    print()
+    print('\n', filler('='), '\n')
+
 
 # TODO Добавить генерацию красивых pdf-документов с отчетностью
-def flights_data(dataframe: pd.DataFrame) -> None:
+def flights_data(flights_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с рейсами бортов авиакомпании
-    :param dataframe: Pandas Dataframe с информацией о полетах
+    :param flights_dataframe: Pandas Dataframe с информацией о полетах
     :return: Ничего не возвращается (Неявный None)
     """
-    print(f'СРЕДНЕЕ ВРЕМЯ ПОЛЕТА НА ОСНОВЕ {len(dataframe)} ЗАПИСЕЙ:')
-    # Получение полных перечней времени взлета и посадки бортов
-    departure = [str(x)[:-6] for x in dataframe[['actual_departure']]['actual_departure']]
-    arrival = [str(x)[:-6] for x in dataframe[['actual_arrival']]['actual_arrival']]
+    print("ПОЛЕТЫ")
+    print(f'Среднее время полета на основе {len(flights_dataframe)} записей:')
+    # Получение полных перечней времени взлета и посадки бортов и отсечение нулевого смещения по часовому поясу
+    departure_actual = [str(x)[:-6] for x in flights_dataframe[['actual_departure']]['actual_departure']]
+    arrival_actual = [str(x)[:-6] for x in flights_dataframe[['actual_arrival']]['actual_arrival']]
+    departure_planned = [str(x)[:-6] for x in flights_dataframe[['scheduled_departure']]['scheduled_departure']]
 
-    pool = mp.Pool(4)
-    flight_time = pool.starmap(mp_func, zip(arrival, departure))
-    avg_flight_time = datetime.timedelta(seconds=np.average(flight_time))
-    print(str(avg_flight_time).split('.')[0])
+    with mp.Pool(4) as pool:
+        flight_time = pool.starmap(mp_avg_flight_time, zip(arrival_actual, departure_actual))
+        avg_flight_time = datetime.timedelta(seconds=np.average(flight_time))
+        print(str(avg_flight_time).split('.')[0])
 
-    print()
-    filler('=')
-    print()
+        print(filler('-'))
+
+        delay_time = pool.starmap(mp_delay_time, zip(departure_planned, departure_actual))
+        in_time = 0  # Счетчик своевременных вылетов
+        delayed = []  # Список для хранения времени задержки рейсов с задержанным вылетом
+        too_soon = []  # Список для хранения времени преждевременного вылета рейсов с преждевременным вылетом
+        for time in delay_time:
+            if time == 0:
+                in_time += 1
+            elif time > 0:
+                delayed.append(time)
+            else:
+                too_soon.append(time)
+
+        in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
+        delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
+        too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
+        avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
+        print(f'ИЗ {len(departure_actual)} совершенных рейсов\n'
+              f'\tВовремя вылетели: {in_time} ({in_time_perc})\n'
+              f'\tОпоздали с вылетом: {len(delayed)} ({delayed_perc}). '
+              f'При этом среднее время задержки равно: {avg_delay_time}\n'
+              f'\tВылетели с опережением графика: {len(too_soon)} ({too_soon_perc})')
+
+    print('\n', filler('='), '\n')
 
 
-def mp_func(arr: str, dep: str) -> datetime.timedelta.seconds:
+def mp_avg_flight_time(arr: str, dep: str) -> float:
     """
     Вспомогательный метод для анализа среднего времени полета
     :param arr: Время вылета борта
@@ -77,13 +104,23 @@ def mp_func(arr: str, dep: str) -> datetime.timedelta.seconds:
     return diff
 
 
+def mp_delay_time(dep_plan: str, dep_act: str) -> float:
+    dep_plan, dep_act = datetime.datetime.strptime(dep_plan, '%Y-%m-%d %H:%M:%S'), \
+                         datetime.datetime.strptime(dep_act, '%Y-%m-%d %H:%M:%S')
+    if dep_act >= dep_plan:
+        diff = (dep_act - dep_plan).total_seconds()
+    else:
+        diff = - (dep_plan - dep_act).total_seconds()
+    return diff
+
+
 def filler(symbol: str):
     """
     Функция для графического отделения данных в консольном отображении
     :param symbol: Символ для повторения в консоли
     :return: Ничего не возвращается (Неявный None)
     """
-    print(symbol * 10)
+    return (symbol * 10)
 
 
 if __name__ == '__main__':
@@ -110,10 +147,11 @@ if __name__ == '__main__':
         flights_data(dataframe)
 
     except (Exception, Error) as error:
-        print('Ошибка при работе с базой данных.\n\t', error)
+        print('Ошибка при работе с базой данных:\n\t', error)
 
     finally:
         if connection:
             cursor.close()
             connection.close()
-            print('Connection closed\n', 'Процесс выполнен за ', datetime.datetime.now() - start_time)
+            print('Подключение к базе данных закрыто')
+        print('Процесс выполнен за', datetime.datetime.now() - start_time)
