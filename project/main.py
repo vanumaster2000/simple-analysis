@@ -20,9 +20,8 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     :return: Ничего не возвращается (Неявный None)
     """
 
-    filler('=')
+    print(filler('='), '\n', sep='')
 
-    print()
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
     res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований авиасудов
     occurrences = {x: res.count(x) for x in list(set(res))}
