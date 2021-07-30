@@ -35,7 +35,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                              aircraft_by_producers[x] > 0]
     aircraft_by_producers = {x: y for (x, y) in aircraft_by_producers}
 
-    filler('-')
+    print(filler('-'))
 
     print('Количество используемых самолетов по производителям:')
     for (producer, amount) in aircraft_by_producers.items():
@@ -77,22 +77,24 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             else:
                 too_soon.append(time)
 
-        in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
-        delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
-        too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
         avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
         res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
               f'\tВовремя вылетели: {in_time}'
         if len(delayed) > 0:
+            in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
             res += f' ({in_time_perc})'
         res += f'\n\tОпоздали с вылетом: {len(delayed)}'
         if len(delayed) > 0:
+            delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
             res += f' ({delayed_perc}). ' \
                    f'При этом среднее время задержки равно: {avg_delay_time}'
         res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
         if len(too_soon) > 0:
+            too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
             res += f' ({too_soon_perc}.'
     print(res)
+    print(filler('-'))
+
 
     print('\n', filler('='), '\n', sep='')
 
@@ -118,7 +120,7 @@ def mp_delay_time(dep_plan: str, dep_act: str) -> float:
     :return: Разность между запланированным и реальным временем вылета в секундах
     """
     dep_plan, dep_act = datetime.datetime.strptime(dep_plan, '%Y-%m-%d %H:%M:%S'), \
-                         datetime.datetime.strptime(dep_act, '%Y-%m-%d %H:%M:%S')
+        datetime.datetime.strptime(dep_act, '%Y-%m-%d %H:%M:%S')
     if dep_act >= dep_plan:
         diff = (dep_act - dep_plan).total_seconds()
     else:
