@@ -42,7 +42,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     for (producer, amount) in aircraft_by_producers.items():
         print(f'\t{producer}: {amount} ед.')
 
-    print('\n', filler('='), '\n')
+    print('\n', filler('='), '\n', sep='')
 
 
 # TODO Добавить генерацию красивых pdf-документов с отчетностью
@@ -95,7 +95,7 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             res += f' ({too_soon_perc}.'
     print(res)
 
-    print('\n', filler('='), '\n')
+    print('\n', filler('='), '\n', sep='')
 
 
 def mp_avg_flight_time(arr: str, dep: str) -> float:
