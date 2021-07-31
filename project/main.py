@@ -77,24 +77,55 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             else:
                 too_soon.append(time)
 
-        avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
-        res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
-              f'\tВовремя вылетели: {in_time}'
-        if len(delayed) > 0:
-            in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
-            res += f' ({in_time_perc})'
-        res += f'\n\tОпоздали с вылетом: {len(delayed)}'
-        if len(delayed) > 0:
-            delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
-            res += f' ({delayed_perc}). ' \
-                   f'При этом среднее время задержки равно: {avg_delay_time}'
-        res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
-        if len(too_soon) > 0:
-            too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
-            res += f' ({too_soon_perc}.'
+    avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
+    flights_dataframe['delay'] = delay_time
+
+    res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
+          f'\tВовремя вылетели: {in_time}'
+    if in_time > 0:
+        in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
+        res += f' ({in_time_perc})'
+    res += f'\n\tОпоздали с вылетом: {len(delayed)}'
+    if len(delayed) > 0:
+        delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
+        res += f' ({delayed_perc}). ' \
+               f'При этом среднее время задержки равно: {avg_delay_time}'
+    res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
+    if len(too_soon) > 0:
+        too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
+        res += f' ({too_soon_perc}.'
     print(res)
     print(filler('-'))
+    df_with_seconds = flights_dataframe.drop(
+        ['scheduled_departure', 'scheduled_arrival', 'actual_departure', 'actual_arrival',
+         'flight_id', 'aircraft_code'], axis=1)
 
+    if in_time > 0:
+        df_in_time = df_with_seconds.loc[df_with_seconds['delay'] == 0]  # Датафрейм со своевременными рейсами
+        df_in_time = df_in_time.drop(['status'], axis=1)  # Столбцы:flight_no, departure_airport, arrival_airport, delay
+        df = df_in_time.flight_no.value_counts().to_frame()
+        maxes = df.index[df['flight_no'] == df['flight_no'].max()].tolist()
+        df_in_time = df_in_time.drop_duplicates()
+        if len(maxes) > 1:
+            data = df_in_time.loc[df_in_time['flight_no'].isin(maxes)]
+
+            deps = data['departure_airport'].tolist()
+            arrs = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board in maxes for dep in deps for arr in arrs]
+            print('Наиболее часто вылетающие вовремя рейсы:')
+            for element in to_print:
+                print(f'\t {element}')
+        else:
+            data = df_in_time.loc[df_in_time['flight_no'] == maxes[0]]
+            dep = data['departure_airport'].item()
+            arr = data['arrival_airport'].item()
+            print(f'\tНаиболее часто вылетающий вовремя рейс: {maxes[0]} из {dep} в {arr}')
+
+    if len(delayed) > 0:
+        pass
+
+    if len(too_soon) > 0:
+        pass
 
     print('\n', filler('='), '\n', sep='')
 
@@ -132,9 +163,9 @@ def filler(symbol: str):
     """
     Функция для графического отделения данных в консольном отображении
     :param symbol: Символ для повторения в консоли
-    :return: Ничего не возвращается (Неявный None)
+    :return: Строка - заполнитель
     """
-    return symbol * 10
+    return symbol * 50
 
 
 if __name__ == '__main__':
@@ -157,7 +188,7 @@ if __name__ == '__main__':
         planes_data(dataframe)
 
         # Анализ данных полетов
-        dataframe = psql.read_sql('SELECT * FROM flights WHERE actual_arrival IS NOT NULL', connection)
+        dataframe = psql.read_sql("SELECT * FROM flights WHERE status='Arrived'", connection)
         flights_data(dataframe)
 
     except (Exception, Error) as error:
