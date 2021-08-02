@@ -41,7 +41,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     for (producer, amount) in aircraft_by_producers.items():
         print(f'\t{producer}: {amount} ед.')
 
-    print('\n', filler('='), '\n', sep='')
+    print(filler('='))
 
 
 # TODO Добавить генерацию красивых pdf-документов с отчетностью
@@ -61,9 +61,6 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     with mp.Pool(4) as pool:
         flight_time = pool.starmap(mp_avg_flight_time, zip(arrival_actual, departure_actual))
         avg_flight_time = datetime.timedelta(seconds=np.average(flight_time))
-        print(str(avg_flight_time).split('.')[0])
-
-        print(filler('-'))
 
         delay_time = pool.starmap(mp_delay_time, zip(departure_planned, departure_actual))
         in_time = 0  # Счетчик своевременных вылетов
@@ -76,6 +73,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
                 delayed.append(time)
             else:
                 too_soon.append(time)
+
+    print(str(avg_flight_time).split('.')[0])
+    print(filler('-'))
 
     avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
     flights_dataframe['delay'] = delay_time
@@ -162,7 +162,7 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             arr = data['arrival_airport'].item()
             print(f'\tНаиболее часто вылетающий с задержкой рейс:\n\t{maxes[0]} из {dep} в {arr}')
 
-    print('\n', filler('='), '\n', sep='')
+    print(filler('='))
 
 
 def mp_avg_flight_time(arr: str, dep: str) -> float:
@@ -204,7 +204,12 @@ def filler(symbol: str):
     :param symbol: Символ для повторения в консоли
     :return: Строка - заполнитель
     """
-    return symbol * 50
+    # Разделитель между основными разделами
+    if symbol == '=':
+        return '\n' + symbol * 50 + '\n'
+    # Разделитель между подразделами
+    else:
+        return symbol * 50
 
 
 if __name__ == '__main__':

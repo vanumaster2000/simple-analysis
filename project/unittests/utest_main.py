@@ -39,7 +39,7 @@ class MpDelayTimeTest(TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_first_arg_not_a_str(self):
+    def test_first_arg_not_a_str(self) -> None:
         self.assertRaises(TypeError, mp_delay_time, (12, 'str'))
 
     def test_second_arg_not_a_string(self):
