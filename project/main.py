@@ -227,7 +227,7 @@ if __name__ == '__main__':
         flights_data(dataframe)
 
     except (Exception, Error) as error:
-        print('Ошибка при работе с базой данных:\n\t', error)
+        print('Ошибка при выполнении скрипта:\n\t', error)
 
     finally:
         if connection:
