@@ -23,7 +23,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     print(filler('='), '\n', sep='')
 
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
-    res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований авиасудов
+    res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований судов
     occurrences = {x: res.count(x) for x in list(set(res))}
     types = sorted([x for x in occurrences.keys()])
     print('Модели самолетов, находящихся в использовании:')
