@@ -22,6 +22,11 @@ class MpAvgFlightTimeTest(TestCase):
         self.assertRaises(TypeError, mp_avg_flight_time, ('2012-03-05 10:12:31', '2012-03-05 10:12:91'))
 
     def test_everything_is_correct(self):
+        date1 = '2020-06-13 20:06:13'
+        date2 = '2019-05-12 19:05:12'
+        self.assertEqual(type(mp_avg_flight_time(date1, date2)), float)
+
+    def first_arg_is_bigger_than_second(self):
         date1 = '2019-05-12 19:05:12'
         date2 = '2020-06-13 20:06:13'
-        self.assertEqual(type(mp_avg_flight_time(date1, date2)), float)
+        self.assertRaises(ValueError, mp_avg_flight_time, (date1, date2))
