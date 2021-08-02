@@ -170,8 +170,13 @@ def mp_avg_flight_time(arr: str, dep: str) -> float:
     Вспомогательный метод для анализа среднего времени полета
     :param arr: Время вылета борта
     :param dep: Время прилета борта
+    :raises: TypeError
     :return: Время полета в секундах
     """
+    if type(arr) != 'str':
+        raise TypeError('Аргумент arr должен быть str объектом')
+    if type(dep) != 'str':
+        raise TypeError('Аргумент dep должен быть str объектом')
     diff = datetime.datetime.strptime(arr, '%Y-%m-%d %H:%M:%S') \
         - datetime.datetime.strptime(dep, '%Y-%m-%d %H:%M:%S')
     diff = diff.total_seconds()
@@ -219,10 +224,9 @@ if __name__ == '__main__':
 
         # Выгрузка данных
         dataframe = psql.read_sql('SELECT * FROM aircrafts_data', connection)
-        # Анализ данных самолетов
+        # Анализ данных по бортам
         planes_data(dataframe)
-
-        # Анализ данных полетов
+        # Анализ данных по полетам
         dataframe = psql.read_sql("SELECT * FROM flights WHERE status='Arrived'", connection)
         flights_data(dataframe)
 
