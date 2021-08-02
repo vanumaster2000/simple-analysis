@@ -173,10 +173,6 @@ def mp_avg_flight_time(arr: str, dep: str) -> float:
     :raises: TypeError
     :return: Время полета в секундах
     """
-    if type(arr) != 'str':
-        raise TypeError('Аргумент arr должен быть str объектом')
-    if type(dep) != 'str':
-        raise TypeError('Аргумент dep должен быть str объектом')
     diff = datetime.datetime.strptime(arr, '%Y-%m-%d %H:%M:%S') \
         - datetime.datetime.strptime(dep, '%Y-%m-%d %H:%M:%S')
     diff = diff.total_seconds()
