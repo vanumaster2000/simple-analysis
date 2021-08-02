@@ -101,16 +101,16 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
          'flight_id', 'aircraft_code', 'status'], axis=1)
 
     if in_time > 0:
-        df_in_time = df_with_seconds.loc[df_with_seconds['delay'] == 0]  # Датафрейм со своевременными рейсами
+        # Датафрейм со своевременными рейсами
+        df_in_time = df_with_seconds.loc[df_with_seconds['delay'] == 0].drop(['delay'], axis=1)
         df = df_in_time.flight_no.value_counts().to_frame()
         maxes = df.index[df['flight_no'] == df['flight_no'].max()].tolist()
-        df_in_time = df_in_time.drop_duplicates()
+        df_in_time = df_in_time.drop_duplicates(keep='first')
         if len(maxes) > 2:
             data = df_in_time.loc[df_in_time['flight_no'].isin(maxes)]
-
             deps = data['departure_airport'].tolist()
             arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board in maxes for dep in deps for arr in arrs]
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(maxes, deps, arrs)]
             print('Наиболее часто вылетающие вовремя рейсы:')
             for element in to_print:
                 print(f'\t {element}')
@@ -118,12 +118,26 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             data = df_in_time.loc[df_in_time['flight_no'] == maxes[0]]
             dep = data['departure_airport'].item()
             arr = data['arrival_airport'].item()
-            print(f'\tНаиболее часто вылетающий вовремя рейс: {maxes[0]} из {dep} в {arr}')
+            print(f'Наиболее часто вылетающий вовремя рейс:\n\t{maxes[0]} из {dep} в {arr}')
 
     if len(delayed) > 0:
         df_delayed = df_with_seconds.loc[df_with_seconds['delay'] > 0]  # Датафрейм с рейсами, вылетевшими с опозданием
-
-
+        df = df_delayed.flight_no.value_counts().to_frame()
+        maxes = df.index[df['flight_no'] == df['flight_no'].max()].tolist()
+        if len(maxes) > 2:
+            data = df_delayed.loc[df_delayed['flight_no'].isin(maxes)].drop(['delay'], axis=1).drop_duplicates()
+            boards = data['flight_no'].tolist()
+            deps = data['departure_airport'].tolist()
+            arrs = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, deps, arrs)]
+            print('Наиболее часто вылетающие с задержкой рейсы:')
+            for element in to_print:
+                print(f'\t {element}')
+        else:
+            data = df_delayed.loc[df_delayed['flight_no'] == maxes[0]]
+            dep = data['departure_airport'].item()
+            arr = data['arrival_airport'].item()
+            print(f'\tНаиболее часто вылетающий с задержкой рейс:\n\t{maxes[0]} из {dep} в {arr}')
 
     if len(too_soon) > 0:
         pass
