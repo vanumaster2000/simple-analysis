@@ -98,11 +98,10 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     print(filler('-'))
     df_with_seconds = flights_dataframe.drop(
         ['scheduled_departure', 'scheduled_arrival', 'actual_departure', 'actual_arrival',
-         'flight_id', 'aircraft_code'], axis=1)
+         'flight_id', 'aircraft_code', 'status'], axis=1)
 
     if in_time > 0:
         df_in_time = df_with_seconds.loc[df_with_seconds['delay'] == 0]  # Датафрейм со своевременными рейсами
-        df_in_time = df_in_time.drop(['status'], axis=1)  # Столбцы:flight_no, departure_airport, arrival_airport, delay
         df = df_in_time.flight_no.value_counts().to_frame()
         maxes = df.index[df['flight_no'] == df['flight_no'].max()].tolist()
         df_in_time = df_in_time.drop_duplicates()
@@ -122,7 +121,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             print(f'\tНаиболее часто вылетающий вовремя рейс: {maxes[0]} из {dep} в {arr}')
 
     if len(delayed) > 0:
-        pass
+        df_delayed = df_with_seconds.loc[df_with_seconds['delay'] > 0]  # Датафрейм с рейсами, вылетевшими с опозданием
+
+
 
     if len(too_soon) > 0:
         pass
