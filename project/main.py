@@ -106,7 +106,7 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         df = df_in_time.flight_no.value_counts().to_frame()
         maxes = df.index[df['flight_no'] == df['flight_no'].max()].tolist()
         df_in_time = df_in_time.drop_duplicates()
-        if len(maxes) > 1:
+        if len(maxes) > 2:
             data = df_in_time.loc[df_in_time['flight_no'].isin(maxes)]
 
             deps = data['departure_airport'].tolist()
