@@ -20,7 +20,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     :return: Ничего не возвращается (Неявный None)
     """
 
-    print(filler('='), '\n', sep='')
+    print(filler('='))
 
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
     res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований судов
@@ -200,14 +200,15 @@ def mp_delay_time(dep_plan: str, dep_act: str) -> float:
 
 def filler(symbol: str):
     """
-    Функция для графического отделения данных в консольном отображении
+    Функция для графического отделения данных в консольном отображении.
+    Знак '=' отделяется строчными отступами сверху и снизу
     :param symbol: Символ для повторения в консоли
     :return: Строка - заполнитель
     """
     # Разделитель между основными разделами
     if symbol == '=':
         return '\n' + symbol * 50 + '\n'
-    # Разделитель между подразделами
+    # Разделитель подразделов
     else:
         return symbol * 50
 
