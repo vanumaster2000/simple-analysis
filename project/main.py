@@ -165,6 +165,25 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     print(filler('='))
 
 
+def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
+    print('БИЛЕТЫ')
+    business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
+    business_tickets_amount = len(business_tickets)
+    avg_price = business_tickets['price'].sum() / business_tickets_amount
+    print(f'Средняя цена билета:\n\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
+    economy_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Economy']
+    economy_tickets_amount = len(economy_tickets)
+    avg_price = economy_tickets['price'].sum() / economy_tickets_amount
+    print(f'\tВ эконом-класс: {"{:.2f}".format(avg_price)}')
+    print(filler('-'))
+    economy_percent = economy_tickets_amount / (economy_tickets_amount + business_tickets_amount)
+    business_percent = business_tickets_amount / (economy_tickets_amount + business_tickets_amount)
+    print(f'Из всех билетов куплено:\n\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
+          f'\tВ бизнесс-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
+
+    print(filler('='))
+
+
 def mp_avg_flight_time(arr: str, dep: str) -> float:
     """
     Вспомогательный метод для анализа среднего времени полета
@@ -237,6 +256,9 @@ if __name__ == '__main__':
         # Анализ данных по полетам
         dataframe = psql.read_sql("SELECT * FROM flights WHERE status='Arrived'", connection)
         flights_data(dataframe)
+        # Анализ данных по билетам
+        dataframe = psql.read_sql("SELECT fare_conditions as type, amount as price FROM ticket_flights", connection)
+        tickets_data(dataframe)
 
     except (Exception, Error) as error:
         print('Ошибка при выполнении скрипта:\n\t', error)
