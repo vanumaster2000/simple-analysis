@@ -64,13 +64,13 @@ class FillerTest(TestCase):
     def tearDown(self) -> None:
         pass
 
-    def test_main_delimeter_is_correct(self) -> None:
+    def test_main_delimiter_is_correct(self) -> None:
         res = f'\n' \
               f'{"=" * 50}' \
               f'\n'
         self.assertEqual(filler('='), res)
 
-    def test_usual_delimeter_is_correct(self) -> None:
+    def test_usual_delimiter_is_correct(self) -> None:
         res_dict = {
             '-': '-' * 50,
             '/': '/' * 50,
