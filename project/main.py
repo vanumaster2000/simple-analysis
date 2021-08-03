@@ -217,7 +217,7 @@ def filler(symbol: str):
 
 
 if __name__ == '__main__':
-    start_time = datetime.datetime.now()
+    start_time = datetime.datetime.now()  # Начальная временная метка для отслеживания времени выполнения скрипта
     mp.freeze_support()
     try:
         connection = psycopg2.connect(
