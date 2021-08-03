@@ -1,5 +1,6 @@
 from unittest import TestCase
-from project.main import mp_avg_flight_time, mp_delay_time, filler
+from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
+from project.main import filler
 
 
 class MpAvgFlightTimeTest(TestCase):

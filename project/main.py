@@ -10,6 +10,7 @@ import numpy as np
 from project.producers import aircraft_producers as air_prod
 import datetime
 import multiprocessing as mp
+from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
 
 
 # TODO: Добавить генерацию красивых pdf-документов с отчетностью
@@ -83,17 +84,17 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
           f'\tВовремя вылетели: {in_time}'
     if in_time > 0:
-        in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
-        res += f' ({in_time_perc})'
+        in_time_percent = "{:.3%}".format(in_time / len(departure_actual))
+        res += f' ({in_time_percent})'
     res += f'\n\tОпоздали с вылетом: {len(delayed)}'
     if len(delayed) > 0:
-        delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
-        res += f' ({delayed_perc}). ' \
+        delayed_percent = "{:.3%}".format(len(delayed) / len(departure_actual))
+        res += f' ({delayed_percent}). ' \
                f'При этом среднее время задержки равно: {avg_delay_time}'
     res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
     if len(too_soon) > 0:
-        too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
-        res += f' ({too_soon_perc}.'
+        too_soon_percent = "{:.3%}".format(len(too_soon) / len(departure_actual))
+        res += f' ({too_soon_percent}.'
     print(res)
     print(filler('-'))
     df_with_seconds = flights_dataframe.drop(
@@ -108,9 +109,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         df_in_time = df_in_time.drop_duplicates(keep='first')
         if len(maxes) > 2:
             data = df_in_time.loc[df_in_time['flight_no'].isin(maxes)]
-            deps = data['departure_airport'].tolist()
-            arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(maxes, deps, arrs)]
+            departures = data['departure_airport'].tolist()
+            arrivals = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(maxes, departures, arrivals)]
             print('Наиболее часто вылетающие вовремя рейсы:')
             for element in to_print:
                 print(f'\t {element}')
@@ -129,9 +130,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         if len(maxes) > 2:
             data = df_delayed.loc[df_delayed['flight_no'].isin(maxes)]
             boards = data['flight_no'].tolist()
-            deps = data['departure_airport'].tolist()
-            arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, deps, arrs)]
+            departures = data['departure_airport'].tolist()
+            arrivals = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, departures, arrivals)]
             print('Наиболее часто вылетающие с задержкой рейсы:')
             for element in to_print:
                 print(f'\t {element}')
@@ -150,9 +151,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         if len(maxes) > 2:
             data = df_soon.loc[df_soon['flight_no'].isin(maxes)]
             boards = data['flight_no'].tolist()
-            deps = data['departure_airport'].tolist()
-            arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, deps, arrs)]
+            departures = data['departure_airport'].tolist()
+            arrivals = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, departures, arrivals)]
             print('Наиболее часто вылетающие с задержкой рейсы:')
             for element in to_print:
                 print(f'\t {element}')
@@ -165,37 +166,23 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     print(filler('='))
 
 
-def mp_avg_flight_time(arr: str, dep: str) -> float:
-    """
-    Вспомогательный метод для анализа среднего времени полета
-    :param arr: Время вылета борта
-    :param dep: Время прилета борта
-    :raises: TypeError, ValueError
-    :return: Время полета в секундах
-    """
-    diff = datetime.datetime.strptime(arr, '%Y-%m-%d %H:%M:%S') \
-        - datetime.datetime.strptime(dep, '%Y-%m-%d %H:%M:%S')
-    diff = diff.total_seconds()
-    if diff < 0:
-        raise ValueError('В данном методе не предусмотрено вычитания поздней даты из более ранней')
-    return diff
+def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
+    print('БИЛЕТЫ')
+    business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
+    business_tickets_amount = len(business_tickets)
+    avg_price = business_tickets['price'].sum() / business_tickets_amount
+    print(f'Средняя цена билета:\n\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
+    economy_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Economy']
+    economy_tickets_amount = len(economy_tickets)
+    avg_price = economy_tickets['price'].sum() / economy_tickets_amount
+    print(f'\tВ эконом-класс: {"{:.2f}".format(avg_price)}')
+    print(filler('-'))
+    economy_percent = economy_tickets_amount / (economy_tickets_amount + business_tickets_amount)
+    business_percent = business_tickets_amount / (economy_tickets_amount + business_tickets_amount)
+    print(f'Из всех билетов куплено:\n\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
+          f'\tВ бизнесс-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
 
-
-def mp_delay_time(dep_plan: str, dep_act: str) -> float:
-    """
-    Вспомогательный метод для расчета разницы в запланированном и реальном времени вылета борта
-    :param dep_plan: Запланированное время вылета борта
-    :param dep_act: Реальное время вылета борта
-    :raises: TypeError
-    :return: Разность между запланированным и реальным временем вылета в секундах
-    """
-    dep_plan, dep_act = datetime.datetime.strptime(dep_plan, '%Y-%m-%d %H:%M:%S'), \
-        datetime.datetime.strptime(dep_act, '%Y-%m-%d %H:%M:%S')
-    if dep_act >= dep_plan:
-        diff = (dep_act - dep_plan).total_seconds()
-    else:
-        diff = - (dep_plan - dep_act).total_seconds()
-    return diff
+    print(filler('='))
 
 
 def filler(symbol: str):
@@ -237,6 +224,9 @@ if __name__ == '__main__':
         # Анализ данных по полетам
         dataframe = psql.read_sql("SELECT * FROM flights WHERE status='Arrived'", connection)
         flights_data(dataframe)
+        # Анализ данных по билетам
+        dataframe = psql.read_sql("SELECT fare_conditions as type, amount as price FROM ticket_flights", connection)
+        tickets_data(dataframe)
 
     except (Exception, Error) as error:
         print('Ошибка при выполнении скрипта:\n\t', error)
