@@ -3,6 +3,7 @@ from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
 from project.main import filler, planes_data, flights_data, tickets_data
 import pandas as pd
 
+
 class MpAvgFlightTimeTest(TestCase):
     def setUp(self) -> None:
         pass
