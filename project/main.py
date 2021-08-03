@@ -203,9 +203,12 @@ def filler(symbol: str):
     Функция для графического отделения данных в консольном отображении.
     Знак '=' отделяется строчными отступами сверху и снизу
     :param symbol: Символ для повторения в консоли
+    :raises: TypeError
     :return: Строка - заполнитель
     """
     # Разделитель между основными разделами
+    if type(symbol) != str:
+        raise TypeError('Метод принимает объект str в качестве аргумента')
     if symbol == '=':
         return '\n' + symbol * 50 + '\n'
     # Разделитель подразделов
@@ -214,7 +217,7 @@ def filler(symbol: str):
 
 
 if __name__ == '__main__':
-    start_time = datetime.datetime.now()
+    start_time = datetime.datetime.now()  # Начальная временная метка для отслеживания времени выполнения скрипта
     mp.freeze_support()
     try:
         connection = psycopg2.connect(
