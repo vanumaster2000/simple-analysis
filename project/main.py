@@ -23,7 +23,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     if type(planes_dataframe) != pd.DataFrame:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print(filler('='))
-
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
     res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований судов
     occurrences = {x: res.count(x) for x in list(set(res))}
