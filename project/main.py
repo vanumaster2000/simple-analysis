@@ -83,17 +83,17 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
           f'\tВовремя вылетели: {in_time}'
     if in_time > 0:
-        in_time_perc = "{:.3%}".format(in_time / len(departure_actual))
-        res += f' ({in_time_perc})'
+        in_time_percent = "{:.3%}".format(in_time / len(departure_actual))
+        res += f' ({in_time_percent})'
     res += f'\n\tОпоздали с вылетом: {len(delayed)}'
     if len(delayed) > 0:
-        delayed_perc = "{:.3%}".format(len(delayed) / len(departure_actual))
-        res += f' ({delayed_perc}). ' \
+        delayed_percent = "{:.3%}".format(len(delayed) / len(departure_actual))
+        res += f' ({delayed_percent}). ' \
                f'При этом среднее время задержки равно: {avg_delay_time}'
     res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
     if len(too_soon) > 0:
-        too_soon_perc = "{:.3%}".format(len(too_soon) / len(departure_actual))
-        res += f' ({too_soon_perc}.'
+        too_soon_percent = "{:.3%}".format(len(too_soon) / len(departure_actual))
+        res += f' ({too_soon_percent}.'
     print(res)
     print(filler('-'))
     df_with_seconds = flights_dataframe.drop(
@@ -108,9 +108,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         df_in_time = df_in_time.drop_duplicates(keep='first')
         if len(maxes) > 2:
             data = df_in_time.loc[df_in_time['flight_no'].isin(maxes)]
-            deps = data['departure_airport'].tolist()
-            arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(maxes, deps, arrs)]
+            departures = data['departure_airport'].tolist()
+            arrivals = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(maxes, departures, arrivals)]
             print('Наиболее часто вылетающие вовремя рейсы:')
             for element in to_print:
                 print(f'\t {element}')
@@ -129,9 +129,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         if len(maxes) > 2:
             data = df_delayed.loc[df_delayed['flight_no'].isin(maxes)]
             boards = data['flight_no'].tolist()
-            deps = data['departure_airport'].tolist()
-            arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, deps, arrs)]
+            departures = data['departure_airport'].tolist()
+            arrivals = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, departures, arrivals)]
             print('Наиболее часто вылетающие с задержкой рейсы:')
             for element in to_print:
                 print(f'\t {element}')
@@ -150,9 +150,9 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
         if len(maxes) > 2:
             data = df_soon.loc[df_soon['flight_no'].isin(maxes)]
             boards = data['flight_no'].tolist()
-            deps = data['departure_airport'].tolist()
-            arrs = data['arrival_airport'].tolist()
-            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, deps, arrs)]
+            departures = data['departure_airport'].tolist()
+            arrivals = data['arrival_airport'].tolist()
+            to_print = [board + ' из ' + dep + ' в ' + arr for board, dep, arr in zip(boards, departures, arrivals)]
             print('Наиболее часто вылетающие с задержкой рейсы:')
             for element in to_print:
                 print(f'\t {element}')
