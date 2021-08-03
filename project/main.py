@@ -17,9 +17,11 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с бортами авиакомпании
     :param planes_dataframe: Pandas DataFrame с информацией о бортах
+    :raises: TypeError
     :return: Ничего не возвращается (Неявный None)
     """
-
+    if type(planes_dataframe) != pd.DataFrame:
+        raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print(filler('='))
 
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
@@ -49,8 +51,11 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с рейсами бортов авиакомпании
     :param flights_dataframe: Pandas Dataframe с информацией о полетах
+    :raises: TypeError
     :return: Ничего не возвращается (Неявный None)
     """
+    if type(flights_dataframe) != pd.DataFrame:
+        raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print("ПОЛЕТЫ")
     print(f'Среднее время полета на основе {len(flights_dataframe)} записей:')
     # Получение полных перечней времени взлета и посадки бортов и отсечение нулевого смещения по часовому поясу
@@ -166,6 +171,14 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
 
 
 def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
+    """
+    Анализ данных, связанных с билетами
+    :param tickets_dataframe: Pandas Dataframe с информацией о билетах
+    :raises: TypeError
+    :return: Ничего не возвращается (Неявный None)
+    """
+    if type(tickets_dataframe) != pd.DataFrame:
+        raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print('БИЛЕТЫ')
     business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
     business_tickets_amount = len(business_tickets)
