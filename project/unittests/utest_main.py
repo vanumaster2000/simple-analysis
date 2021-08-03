@@ -1,5 +1,5 @@
 from unittest import TestCase
-from project.main import mp_avg_flight_time, mp_delay_time
+from project.main import mp_avg_flight_time, mp_delay_time, filler
 
 
 class MpAvgFlightTimeTest(TestCase):
@@ -55,3 +55,30 @@ class MpDelayTimeTest(TestCase):
         date1 = '2020-06-13 20:06:13'
         date2 = '2019-05-12 19:05:12'
         self.assertEqual(type(mp_delay_time(date1, date2)), float)
+
+
+class FillerTest(TestCase):
+    def setUp(self) -> None:
+        pass
+
+    def tearDown(self) -> None:
+        pass
+
+    def test_main_delimeter_is_correct(self) -> None:
+        res = f'\n' \
+              f'{"=" * 50}' \
+              f'\n'
+        self.assertEqual(filler('='), res)
+
+    def test_usual_delimeter_is_correct(self) -> None:
+        res_dict = {
+            '-': '-' * 50,
+            '/': '/' * 50,
+            '#': '#' * 50
+        }
+        for key in res_dict.keys():
+            self.assertEqual(filler(key), res_dict[key])
+
+    def test_arg_class_is_incorrect(self) -> None:
+        self.assertRaises(TypeError, filler, 2)
+        self.assertRaises(TypeError, filler, ('2', '4'))
