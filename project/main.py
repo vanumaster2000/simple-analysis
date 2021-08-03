@@ -1,6 +1,5 @@
 # -*- coding: <utf-8> -*-
 
-# TODO: Добавить UI для ввода данных подключения к БД
 import psycopg2
 from psycopg2 import Error
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
