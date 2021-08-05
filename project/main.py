@@ -114,8 +114,8 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     res += f'\n\tОпоздали с вылетом: {len(delayed)}'
     if len(delayed) > 0:
         delayed_percent = "{:.3%}".format(len(delayed) / len(departure_actual))
-        res += f' ({delayed_percent}). ' \
-               f'При этом среднее время задержки равно: {avg_delay_time}'
+        res += f' ({delayed_percent}).\n' \
+               f'\t  При этом среднее время задержки равно: {avg_delay_time}'
     res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
     if len(too_soon) > 0:
         too_soon_percent = "{:.3%}".format(len(too_soon) / len(departure_actual))
@@ -205,15 +205,15 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     economy_tickets_amount = len(economy_tickets)
     avg_price = economy_tickets['price'].sum() / economy_tickets_amount
     print(f'Средняя цена билета:\n'
-          f'\tВ эконом-класс: {"{:.3f}".format(avg_price)}')
+          f'\tВ эконом-класс: {"{:.2f}".format(avg_price)}')
     comfort_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Comfort']
     comfort_tickets_amount = len(comfort_tickets)
     avg_price = comfort_tickets['price'].sum() / comfort_tickets_amount
-    print(f'\tВ комфорт-класс: {"{:.3f}".format(avg_price)}')
+    print(f'\tВ комфорт-класс: {"{:.2f}".format(avg_price)}')
     business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
     business_tickets_amount = len(business_tickets)
     avg_price = business_tickets['price'].sum() / business_tickets_amount
-    print(f'\tВ бизнесс-класс: {"{:.3f}".format(avg_price)}')
+    print(f'\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
     print(filler('-'))
     total = economy_tickets_amount + business_tickets_amount + comfort_tickets_amount
     economy_percent = economy_tickets_amount / total
