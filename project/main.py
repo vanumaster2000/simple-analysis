@@ -204,7 +204,8 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     economy_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Economy']
     economy_tickets_amount = len(economy_tickets)
     avg_price = economy_tickets['price'].sum() / economy_tickets_amount
-    print(f'\tВ эконом-класс: {"{:.3f}".format(avg_price)}')
+    print(f'Средняя цена билета:\n'
+          f'\tВ эконом-класс: {"{:.3f}".format(avg_price)}')
     comfort_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Comfort']
     comfort_tickets_amount = len(comfort_tickets)
     avg_price = comfort_tickets['price'].sum() / comfort_tickets_amount
@@ -212,13 +213,14 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
     business_tickets_amount = len(business_tickets)
     avg_price = business_tickets['price'].sum() / business_tickets_amount
-    print(f'Средняя цена билета:\n\tВ бизнесс-класс: {"{:.3f}".format(avg_price)}')
+    print(f'\tВ бизнесс-класс: {"{:.3f}".format(avg_price)}')
     print(filler('-'))
     total = economy_tickets_amount + business_tickets_amount + comfort_tickets_amount
     economy_percent = economy_tickets_amount / total
     comfort_percent = comfort_tickets_amount / total
     business_percent = business_tickets_amount / total
-    print(f'Из всех билетов куплено:\n\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
+    print(f'Из всех билетов куплено:\n'
+          f'\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
           f'\tВ комфорт-класс: {comfort_tickets_amount} ({"{:.3%}".format(comfort_percent)})\n'
           f'\tВ бизнесс-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
 
