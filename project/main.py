@@ -24,13 +24,35 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print(filler('='))
     print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
-    res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований судов
-    occurrences = {x: res.count(x) for x in list(set(res))}
-    types = sorted([x for x in occurrences.keys()])
+    planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
+    seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
+    seats_data = seats.groupby('aircraft_code')['fare_conditions'].value_counts()
+    for code in planes_dataframe['aircraft_code']:
+        data = seats_data[code].reset_index(name='count')
+        fares = data['fare_conditions'].to_list()
+        for fare in fares:
+            planes_dataframe.loc[planes_dataframe['aircraft_code'] == code, fare] = \
+                data.loc[data['fare_conditions'] == fare, 'count'].item()
+    res = [(x['en'], eco, com, bus) for x, eco, com, bus in
+           zip(planes_dataframe['model'],
+               planes_dataframe['Economy'],
+               planes_dataframe['Comfort'],
+               planes_dataframe['Business'])
+           ]  # Список кортежей вида (название судна, мест в экономе, мест в комфорте, мест в бизнесе)
+    types = sorted(res, key=lambda x: x[0])
     print('Модели самолетов, находящихся в использовании:')
-    for single in types:
-        print('\t', single)
-    types = [x.split()[0].lower() for x in types]  # Приведение производителя (первое слово в строке) к нижнему регистру
+    for board in types:
+        print('\t', board[0], '\n\t  Места:', sep='')
+        (eco, com, bus) = board[1:]
+        if eco > 0:
+            print(f'\t\tЭконом-класс: {eco}')
+        if com > 0:
+            print(f'\t\tКомфорт-класс: {com}')
+        if bus > 0:
+            print(f'\t\tБизнесс-класс: {bus}')
+    types = [
+        x[0].split()[0].lower() for x in types
+    ]  # Приведение производителя (первое слово в строке) к нижнему регистру
     aircraft_by_producers = {x.title(): types.count(x) for x in air_prod}
     aircraft_by_producers = [(x, aircraft_by_producers[x]) for x in aircraft_by_producers.keys() if
                              aircraft_by_producers[x] > 0]
@@ -179,18 +201,25 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     if type(tickets_dataframe) != pd.DataFrame:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print('БИЛЕТЫ')
-    business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
-    business_tickets_amount = len(business_tickets)
-    avg_price = business_tickets['price'].sum() / business_tickets_amount
-    print(f'Средняя цена билета:\n\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
     economy_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Economy']
     economy_tickets_amount = len(economy_tickets)
     avg_price = economy_tickets['price'].sum() / economy_tickets_amount
-    print(f'\tВ эконом-класс: {"{:.2f}".format(avg_price)}')
+    print(f'\tВ эконом-класс: {"{:.3f}".format(avg_price)}')
+    comfort_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Comfort']
+    comfort_tickets_amount = len(comfort_tickets)
+    avg_price = comfort_tickets['price'].sum() / comfort_tickets_amount
+    print(f'\tВ комфорт-класс: {"{:.3f}".format(avg_price)}')
+    business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
+    business_tickets_amount = len(business_tickets)
+    avg_price = business_tickets['price'].sum() / business_tickets_amount
+    print(f'Средняя цена билета:\n\tВ бизнесс-класс: {"{:.3f}".format(avg_price)}')
     print(filler('-'))
-    economy_percent = economy_tickets_amount / (economy_tickets_amount + business_tickets_amount)
-    business_percent = business_tickets_amount / (economy_tickets_amount + business_tickets_amount)
+    total = economy_tickets_amount + business_tickets_amount + comfort_tickets_amount
+    economy_percent = economy_tickets_amount / total
+    comfort_percent = comfort_tickets_amount / total
+    business_percent = business_tickets_amount / total
     print(f'Из всех билетов куплено:\n\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
+          f'\tВ комфорт-класс: {comfort_tickets_amount} ({"{:.3%}".format(comfort_percent)})\n'
           f'\tВ бизнесс-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
 
     print(filler('='))
@@ -216,6 +245,7 @@ def filler(symbol: str):
 
 if __name__ == '__main__':
     start_time = datetime.datetime.now()  # Начальная временная метка для отслеживания времени выполнения скрипта
+    pd.set_option('display.max_columns', 15)
     mp.freeze_support()
     try:
         connection = psycopg2.connect(
