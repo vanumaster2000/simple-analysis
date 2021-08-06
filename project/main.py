@@ -1,6 +1,5 @@
 # -*- coding: <utf-8> -*-
 
-# TODO: Добавить UI для ввода данных подключения к БД
 import psycopg2
 from psycopg2 import Error
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -11,6 +10,7 @@ from project.producers import aircraft_producers as air_prod
 import datetime
 import multiprocessing as mp
 from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
+from project.text_colors import Colors as Clr
 
 
 # TODO: Добавить генерацию красивых pdf-документов с отчетностью
@@ -18,29 +18,52 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с бортами авиакомпании
     :param planes_dataframe: Pandas DataFrame с информацией о бортах
+    :raises: TypeError
     :return: Ничего не возвращается (Неявный None)
     """
+    if type(planes_dataframe) != pd.DataFrame:
+        raise TypeError('Метод предназначен для обработки pandas.Dataframe')
 
     print(filler('='))
 
-    print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
-    res = [x['en'] for x in planes_dataframe['model']]  # Получение английских наименований судов
-    occurrences = {x: res.count(x) for x in list(set(res))}
-    types = sorted([x for x in occurrences.keys()])
-    print('Модели самолетов, находящихся в использовании:')
-    for single in types:
-        print('\t', single)
-    types = [x.split()[0].lower() for x in types]  # Приведение производителя (первое слово в строке) к нижнему регистру
-    aircraft_by_producers = {x.title(): types.count(x) for x in air_prod}
-    aircraft_by_producers = [(x, aircraft_by_producers[x]) for x in aircraft_by_producers.keys() if
-                             aircraft_by_producers[x] > 0]
-    aircraft_by_producers = {x: y for (x, y) in aircraft_by_producers}
+    print(f'{Clr.BOLD}ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ{Clr.ENDC}')
 
-    print(filler('-'))
+    planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
+    seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
+    seats_data = seats.groupby('aircraft_code')['fare_conditions'].value_counts()
+    for code in planes_dataframe['aircraft_code']:
+        data = seats_data[code].reset_index(name='count')
+        fares = data['fare_conditions'].to_list()
+        for fare in fares:
+            planes_dataframe.loc[planes_dataframe['aircraft_code'] == code, fare] = \
+                data.loc[data['fare_conditions'] == fare, 'count'].item()
+    res = [(x['en'], eco, com, bus) for x, eco, com, bus in
+           zip(planes_dataframe['model'],
+               planes_dataframe['Economy'],
+               planes_dataframe['Comfort'],
+               planes_dataframe['Business'])
+           ]  # Список кортежей вида (название судна, мест в экономе, мест в комфорте, мест в бизнесе)
+    types = sorted(set(res), key=lambda x: x[0])
+    prods = [
+        x[0].split()[0] for x in types
+    ]  # Получение списка производителей
+    aircraft_by_producers = {x: [prods.count(x)] for x in air_prod if prods.count(x) > 0}
+    for producer in aircraft_by_producers.keys():
+        for board in types:
+            if board[0].startswith(producer):
+                aircraft_by_producers[producer].append(board)
 
-    print('Количество используемых самолетов по производителям:')
     for (producer, amount) in aircraft_by_producers.items():
-        print(f'\t{producer}: {amount} ед.')
+        print(f'  {producer}: {amount[0]} ед.')
+        for i in range(1, len(amount)):
+            print(f'\t{Clr.BOLD}{i}){Clr.ENDC} {amount[i][0]}\n\t  Места:')
+            (eco, com, bus) = amount[i][1:]
+            if eco > 0:
+                print(f'\t\tЭконом-класс: {eco}')
+            if com > 0:
+                print(f'\t\tКомфорт-класс: {com}')
+            if bus > 0:
+                print(f'\t\tБизнесс-класс: {bus}')
 
     print(filler('='))
 
@@ -50,10 +73,15 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с рейсами бортов авиакомпании
     :param flights_dataframe: Pandas Dataframe с информацией о полетах
+    :raises: TypeError
     :return: Ничего не возвращается (Неявный None)
     """
-    print("ПОЛЕТЫ")
-    print(f'Среднее время полета на основе {len(flights_dataframe)} записей:')
+    if type(flights_dataframe) != pd.DataFrame:
+        raise TypeError('Метод предназначен для обработки pandas.Dataframe')
+
+    print(F'{Clr.BOLD}ПОЛЕТЫ{Clr.ENDC}')
+    print(f'Среднее время полета на основе {Clr.BOLD}{len(flights_dataframe)}{Clr.ENDC} записей:')
+
     # Получение полных перечней времени взлета и посадки бортов и отсечение нулевого смещения по часовому поясу
     departure_actual = [str(x)[:-6] for x in flights_dataframe[['actual_departure']]['actual_departure']]
     arrival_actual = [str(x)[:-6] for x in flights_dataframe[['actual_arrival']]['actual_arrival']]
@@ -75,13 +103,12 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             else:
                 too_soon.append(time)
 
-    print(str(avg_flight_time).split('.')[0])
+    print(f'{Clr.BOLD}{str(avg_flight_time).split(".")[0]}{Clr.ENDC}')
     print(filler('-'))
 
     avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
     flights_dataframe['delay'] = delay_time
-
-    res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
+    res = f'Из {Clr.BOLD}{len(departure_actual)}{Clr.ENDC} совершенных рейсов\n' \
           f'\tВовремя вылетели: {in_time}'
     if in_time > 0:
         in_time_percent = "{:.3%}".format(in_time / len(departure_actual))
@@ -89,14 +116,16 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     res += f'\n\tОпоздали с вылетом: {len(delayed)}'
     if len(delayed) > 0:
         delayed_percent = "{:.3%}".format(len(delayed) / len(departure_actual))
-        res += f' ({delayed_percent}). ' \
-               f'При этом среднее время задержки равно: {avg_delay_time}'
+        res += f' ({delayed_percent}).\n' \
+               f'\t  При этом среднее время задержки равно: {avg_delay_time}'
     res += f'\n\tВылетели с опережением графика: {len(too_soon)}'
     if len(too_soon) > 0:
         too_soon_percent = "{:.3%}".format(len(too_soon) / len(departure_actual))
         res += f' ({too_soon_percent}.'
+
     print(res)
     print(filler('-'))
+
     df_with_seconds = flights_dataframe.drop(
         ['scheduled_departure', 'scheduled_arrival', 'actual_departure', 'actual_arrival',
          'flight_id', 'aircraft_code', 'status'], axis=1)
@@ -167,19 +196,45 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
 
 
 def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
-    print('БИЛЕТЫ')
-    business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
-    business_tickets_amount = len(business_tickets)
-    avg_price = business_tickets['price'].sum() / business_tickets_amount
-    print(f'Средняя цена билета:\n\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
+    """
+    Анализ данных, связанных с билетами
+    :param tickets_dataframe: Pandas Dataframe с информацией о билетах
+    :raises: TypeError
+    :return: Ничего не возвращается (Неявный None)
+    """
+    if type(tickets_dataframe) != pd.DataFrame:
+        raise TypeError('Метод предназначен для обработки pandas.Dataframe')
+
+    print(f'{Clr.BOLD}БИЛЕТЫ{Clr.ENDC}')
+
     economy_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Economy']
     economy_tickets_amount = len(economy_tickets)
     avg_price = economy_tickets['price'].sum() / economy_tickets_amount
-    print(f'\tВ эконом-класс: {"{:.2f}".format(avg_price)}')
+
+    print(f'Средняя цена билета:\n'
+          f'\tВ эконом-класс: {"{:.2f}".format(avg_price)}')
+
+    comfort_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Comfort']
+    comfort_tickets_amount = len(comfort_tickets)
+    avg_price = comfort_tickets['price'].sum() / comfort_tickets_amount
+
+    print(f'\tВ комфорт-класс: {"{:.2f}".format(avg_price)}')
+
+    business_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Business']
+    business_tickets_amount = len(business_tickets)
+    avg_price = business_tickets['price'].sum() / business_tickets_amount
+
+    print(f'\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
     print(filler('-'))
-    economy_percent = economy_tickets_amount / (economy_tickets_amount + business_tickets_amount)
-    business_percent = business_tickets_amount / (economy_tickets_amount + business_tickets_amount)
-    print(f'Из всех билетов куплено:\n\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
+
+    total = economy_tickets_amount + business_tickets_amount + comfort_tickets_amount
+    economy_percent = economy_tickets_amount / total
+    comfort_percent = comfort_tickets_amount / total
+    business_percent = business_tickets_amount / total
+
+    print(f'Из всех билетов куплено:\n'
+          f'\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
+          f'\tВ комфорт-класс: {comfort_tickets_amount} ({"{:.3%}".format(comfort_percent)})\n'
           f'\tВ бизнесс-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
 
     print(filler('='))
@@ -197,7 +252,7 @@ def filler(symbol: str):
     if type(symbol) != str:
         raise TypeError('Метод принимает объект str в качестве аргумента')
     if symbol == '=':
-        return '\n' + symbol * 50 + '\n'
+        return f'\n{Clr.BOLD}{symbol * 50}{Clr.ENDC}\n'
     # Разделитель подразделов
     else:
         return symbol * 50
@@ -205,6 +260,7 @@ def filler(symbol: str):
 
 if __name__ == '__main__':
     start_time = datetime.datetime.now()  # Начальная временная метка для отслеживания времени выполнения скрипта
+    pd.set_option('display.max_columns', 15)
     mp.freeze_support()
     try:
         connection = psycopg2.connect(
