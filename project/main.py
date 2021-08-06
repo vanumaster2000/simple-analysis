@@ -10,6 +10,7 @@ from project.producers import aircraft_producers as air_prod
 import datetime
 import multiprocessing as mp
 from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
+from project.text_colors import Colors as Clr
 
 
 # TODO: Добавить генерацию красивых pdf-документов с отчетностью
@@ -25,7 +26,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
 
     print(filler('='))
 
-    print('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ')
+    print(f'{Clr.BOLD}ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ{Clr.ENDC}')
 
     planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
     seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
@@ -55,7 +56,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     for (producer, amount) in aircraft_by_producers.items():
         print(f'  {producer}: {amount[0]} ед.')
         for i in range(1, len(amount)):
-            print(f'\t{i}) {amount[i][0]}\n\t  Места:')
+            print(f'\t{Clr.BOLD}{i}){Clr.ENDC} {amount[i][0]}\n\t  Места:')
             (eco, com, bus) = amount[i][1:]
             if eco > 0:
                 print(f'\t\tЭконом-класс: {eco}')
@@ -78,8 +79,8 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     if type(flights_dataframe) != pd.DataFrame:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
 
-    print("ПОЛЕТЫ")
-    print(f'Среднее время полета на основе {len(flights_dataframe)} записей:')
+    print(F'{Clr.BOLD}ПОЛЕТЫ{Clr.ENDC}')
+    print(f'Среднее время полета на основе {Clr.BOLD}{len(flights_dataframe)}{Clr.ENDC} записей:')
 
     # Получение полных перечней времени взлета и посадки бортов и отсечение нулевого смещения по часовому поясу
     departure_actual = [str(x)[:-6] for x in flights_dataframe[['actual_departure']]['actual_departure']]
@@ -102,12 +103,12 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
             else:
                 too_soon.append(time)
 
-    print(str(avg_flight_time).split('.')[0])
+    print(f'{Clr.BOLD}{str(avg_flight_time).split(".")[0]}{Clr.ENDC}')
     print(filler('-'))
 
     avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
     flights_dataframe['delay'] = delay_time
-    res = f'ИЗ {len(departure_actual)} совершенных рейсов\n' \
+    res = f'Из {Clr.BOLD}{len(departure_actual)}{Clr.ENDC} совершенных рейсов\n' \
           f'\tВовремя вылетели: {in_time}'
     if in_time > 0:
         in_time_percent = "{:.3%}".format(in_time / len(departure_actual))
@@ -204,7 +205,7 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     if type(tickets_dataframe) != pd.DataFrame:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
 
-    print('БИЛЕТЫ')
+    print(f'{Clr.BOLD}БИЛЕТЫ{Clr.ENDC}')
 
     economy_tickets = tickets_dataframe.loc[tickets_dataframe['type'] == 'Economy']
     economy_tickets_amount = len(economy_tickets)
@@ -251,7 +252,7 @@ def filler(symbol: str):
     if type(symbol) != str:
         raise TypeError('Метод принимает объект str в качестве аргумента')
     if symbol == '=':
-        return '\n' + symbol * 50 + '\n'
+        return f'\n{Clr.BOLD}{symbol * 50}{Clr.ENDC}\n'
     # Разделитель подразделов
     else:
         return symbol * 50
