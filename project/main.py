@@ -11,9 +11,9 @@ import datetime
 import multiprocessing as mp
 from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
 from project.text_colors import Colors as Clr
+from fpdf import FPDF
 
 
-# TODO: Добавить генерацию красивых pdf-документов с отчетностью
 def planes_data(planes_dataframe: pd.DataFrame) -> None:
     """
     Анализ данных, связанных с бортами авиакомпании
@@ -25,8 +25,15 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
 
     print(filler('='))
-
-    print(Clr.bold('ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ'))
+    title = 'ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ'
+    print(Clr.bold(title))
+    file = FPDF(unit='pt')  # Все измерения и координаты в документе - в пикселях
+    file.set_fill_color(255, 64, 52)  # Настройка цвета заливки ячеек таблицы
+    file.add_page()
+    file.add_font('times', '', 'project/static/tnr.ttf', uni=True)  # Normal Times New Roman font
+    file.add_font('times b', '', 'project/static/tnrb.ttf', uni=True)  # Bold Times New Roman font
+    file.set_font('times b', size=18)
+    file.cell(w=0, h=1, txt=title, align='C', ln=1)
 
     planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
     seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
@@ -52,19 +59,64 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         for board in types:
             if board[0].startswith(producer):
                 aircraft_by_producers[producer].append(board)
-
+    col_names = ('№', 'Судно', 'Эконом', 'Комфорт', 'Бизнес', 'Всего')  # Названия столбцов таблиц
+    total_value_width = 60  # Значение для добавления к общей ширине.
+    # Разница в ширине между столбцом с названием судна и остальными
+    for name in col_names:  # Вычисление ширины таблицы
+        total_value_width += file.get_string_width(name) + 20
+    left_margin_table = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа
+    left_margin_text = file.l_margin
+    file.c_margin = 0
+    cols_width = []  # Список для хранения ширин столбцов
     for (producer, amount) in aircraft_by_producers.items():
+        file.set_left_margin(left_margin_text)
+        file.cell(w=0, h=37, txt=producer,
+                  align='C', ln=1)  # Добавление в документ заголовка с указанием производителя
+        file.set_left_margin(left_margin_table)
+        # Добавление ячеек с названиями столбцов
+        for i in range(len(col_names)):
+            if i != 1:
+                if i < 5:  # Добавление ячеек таблицы
+                    width = file.get_string_width(col_names[i]) + 20
+                    file.cell(w=width, h=24, txt=col_names[i], border=1, align='C')
+                    cols_width.append(width)  # Добавление ширины в список
+                else:  # Отдельная логика для крайней справа ячейки. Добавляется перенос строки
+                    width = file.get_string_width(col_names[i]) + 20
+                    file.cell(w=width, h=24, txt=col_names[i], border=1, align='C', ln=1)
+                    cols_width.append(width)  # Добавление ширины в список
+            else:
+                width = file.get_string_width(col_names[i]) + 80  # Увеличенная ширина для корректной записи судов
+                file.cell(w=width, h=24, txt=col_names[i], border=1, align='C')
+                cols_width.append(width)  # Добавление ширины в список
         print(f'  {producer}: {amount[0]} ед.')
         for i in range(1, len(amount)):
             print(f'\t{Clr.bold(i)} {amount[i][0]}\n\t  Места:')
             (eco, com, bus) = amount[i][1:]
+            file.cell(w=cols_width[0], h=24, txt=str(i), border=1, align='C')
+            data = amount[i]
+            for j in range(len(data) + 1):
+                if j != 4:
+                    if j == 0:
+                        file.cell(w=cols_width[j + 1], h=24, txt=' '.join(data[j].split(' ')[1:]), border=1, align='C',
+                                  fill=data[j] == 0)
+                    else:
+                        file.cell(w=cols_width[j + 1], h=24, txt=str(0), border=1, align='C',
+                                  fill=data[j] == 0)
+                else:  # Перенос каретки после последней ячейки в таблице
+                    total = str(sum(data[1:]))
+                    file.cell(w=cols_width[j + 1], h=24, txt=total, border=1, align='C', ln=1)
+
             if eco > 0:
                 print(f'\t\tЭконом-класс: {eco}')
             if com > 0:
                 print(f'\t\tКомфорт-класс: {com}')
             if bus > 0:
                 print(f'\t\tБизнесс-класс: {bus}')
+        file.cell(-left_margin_table)  # Сброс отступа. Необходим для центрирования заголовка
 
+    # Сохранение pdf файла
+    file.output(f'project/output/planes_data_'
+                f'{datetime.datetime.now().strftime("%d_%b_%Y_%H_%M_%S")}.pdf')
     print(filler('='))
 
 
