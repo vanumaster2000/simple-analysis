@@ -10,6 +10,10 @@ class Colors:
     _UNDERLINE = '\033[4m'
     FILL_RED = (255, 64, 52)
     FILL_GRAY = (211, 211, 211)
+    FILL_GREEN = (79, 121, 66)
+    FILL_BLUE = (0, 0, 128)
+    FILL_YELLOW = (255, 255, 0)
+    FILL_PURPLE = (128, 0, 128)
 
     def header(self, text_to_wrap: str) -> str:
         """
