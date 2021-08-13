@@ -4,7 +4,7 @@ class Colors:
     _BLUE = '\033[94m'
     _CYAN = '\033[96m'
     _GREEN = '\033[92m'
-    _WARNING = '\033[93m'
+    _ORANGE = '\033[93m'
     _RED = '\033[91m'
     _BOLD = '\033[1m'
     _UNDERLINE = '\033[4m'
@@ -63,7 +63,7 @@ class Colors:
         :param text_to_wrap: текст для окрашивания
         :return: строка с ANSI-последовательностью
         """
-        return self._WARNING + str(text_to_wrap) + self._END
+        return self._ORANGE + str(text_to_wrap) + self._END
 
     def red(self, text_to_wrap: str) -> str:
         """
