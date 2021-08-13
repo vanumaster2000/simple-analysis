@@ -165,9 +165,11 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 if j == 1:
                     file.cell(w=sum(cols_width[0:2]), h=24, txt='Всего мест', border=1, fill=True)
                 elif j < len(col_names) - 1:
-                    file.cell(w=cols_width[j], h=24, txt=str(seats_total[j-2]), border=1, allign='R', fill=True)
+                    file.cell(w=cols_width[j], h=24, txt='{:,}'.format(seats_total[j - 2]).replace(',', ' '),
+                              border=1, align='R', fill=True)
                 else:
-                    file.cell(w=cols_width[j], h=24, txt=str(sum(seats_total)), border=1, ln=1, allign='R', fill=True)
+                    file.cell(w=cols_width[j], h=24, txt='{:,}'.format(sum(seats_total)).replace(',', ' '),
+                              border=1, ln=1, align='R', fill=True)
 
     # Сохранение pdf файла с отчетом
     file.output(f'project/output/planes_data_'
