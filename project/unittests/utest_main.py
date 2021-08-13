@@ -4,7 +4,7 @@ from project.main import filler, planes_data, flights_data, tickets_data
 import pandas as pd
 
 
-class MpAvgFlightTimeTest(TestCase):
+class TestMpAvgFlightTime(TestCase):
     def setUp(self) -> None:
         pass
 
@@ -34,7 +34,7 @@ class MpAvgFlightTimeTest(TestCase):
         self.assertRaises(ValueError, mp_avg_flight_time, (date1, date2))
 
 
-class MpDelayTimeTest(TestCase):
+class TestMpDelayTime(TestCase):
     def setUp(self) -> None:
         pass
 
@@ -59,7 +59,7 @@ class MpDelayTimeTest(TestCase):
         self.assertEqual(type(mp_delay_time(date1, date2)), float)
 
 
-class FillerTest(TestCase):
+class TestFiller(TestCase):
     def setUp(self) -> None:
         pass
 
@@ -86,7 +86,7 @@ class FillerTest(TestCase):
         self.assertRaises(TypeError, filler, ('2', '4'))
 
 
-class DataAnalysisMethodsTest(TestCase):
+class TestDataAnalysisMethods(TestCase):
     def setUp(self) -> None:
         pass
 
@@ -126,3 +126,11 @@ class DataAnalysisMethodsTest(TestCase):
         self.assertRaises(TypeError, tickets_data, 10001)
         self.assertRaises(TypeError, tickets_data, 'some string')
         self.assertRaises(TypeError, tickets_data, lambda x: str(x))
+
+
+if __name__ == '__main__':
+    TestFiller()
+    TestMpDelayTime()
+    TestMpAvgFlightTime()
+    TestDataAnalysisMethods()
+

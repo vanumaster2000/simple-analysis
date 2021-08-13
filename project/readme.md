@@ -4,7 +4,8 @@
 2. pandas;
 3. numpy;
 4. multiprocessing;
-5. datetime.
+5. datetime;
+6. fpdf.
 
 База данных - PostgreSQL. Анализ проводится для средней демо-версии
 базы данных. [Скачать ее можно здесь](https://postgrespro.ru/education/demodb).  
