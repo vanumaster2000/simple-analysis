@@ -8,6 +8,8 @@ class Colors:
     _RED = '\033[91m'
     _BOLD = '\033[1m'
     _UNDERLINE = '\033[4m'
+    FILL_RED = (255, 64, 52)
+    FILL_GRAY = (211, 211, 211)
 
     def header(self, text_to_wrap: str) -> str:
         """
