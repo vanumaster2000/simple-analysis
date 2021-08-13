@@ -132,7 +132,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 for j in range(1, len(col_names)):
                     if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
                         if j == 1:  # Логика для первой ячейки (два столбца объединены)
-                            file.cell(w=sum(cols_width[j-1:j+1]), h=24, txt='Подытог',
+                            file.cell(w=sum(cols_width[j-1:j+1]), h=24, txt='Всего',
                                       border=1, align='L', fill=True)
                         else:
                             file.cell(w=cols_width[j], h=24, txt=str(seats_in_plane[j-2]),
@@ -163,11 +163,11 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     file.set_font('times', size=18)
             else:  # Заполнение основной части таблицы
                 if j == 1:
-                    file.cell(w=sum(cols_width[0:2]), h=24, txt='Итого мест', border=1, fill=True)
+                    file.cell(w=sum(cols_width[0:2]), h=24, txt='Всего мест', border=1, fill=True)
                 elif j < len(col_names) - 1:
-                    file.cell(w=cols_width[j], h=24, txt=str(seats_total[j-2]), border=1, fill=True)
+                    file.cell(w=cols_width[j], h=24, txt=str(seats_total[j-2]), border=1, allign='R', fill=True)
                 else:
-                    file.cell(w=cols_width[j], h=24, txt=str(sum(seats_total)), border=1, ln=1, fill=True)
+                    file.cell(w=cols_width[j], h=24, txt=str(sum(seats_total)), border=1, ln=1, allign='R', fill=True)
 
     # Сохранение pdf файла с отчетом
     file.output(f'project/output/planes_data_'
