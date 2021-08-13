@@ -64,15 +64,13 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     # Разница в ширине между столбцом с названием судна и остальными
     for name in col_names:  # Вычисление ширины таблицы
         total_value_width += file.get_string_width(name) + 20
-    left_margin_table = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа
-    left_margin_text = file.l_margin
+    left_margin = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа
     file.c_margin = 0
     cols_width = []  # Список для хранения ширин столбцов
     for (producer, amount) in aircraft_by_producers.items():
-        file.set_left_margin(left_margin_text)
+        file.set_left_margin(left_margin)
         file.cell(w=0, h=37, txt=producer,
-                  align='C', ln=1)  # Добавление в документ заголовка с указанием производителя
-        file.set_left_margin(left_margin_table)
+                  align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
         # Добавление ячеек с названиями столбцов
         for i in range(len(col_names)):
             if i != 1:
@@ -90,7 +88,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 cols_width.append(width)  # Добавление ширины в список
         print(f'  {producer}: {amount[0]} ед.')
         for i in range(1, len(amount)):
-            print(f'\t{Clr.bold(i)} {amount[i][0]}\n\t  Места:')
+            print(f'\t{Clr.bold(str(i))} {amount[i][0]}\n\t  Места:')
             (eco, com, bus) = amount[i][1:]
             file.cell(w=cols_width[0], h=24, txt=str(i), border=1, align='C')
             data = amount[i]
@@ -100,7 +98,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                         file.cell(w=cols_width[j + 1], h=24, txt=' '.join(data[j].split(' ')[1:]), border=1, align='C',
                                   fill=data[j] == 0)
                     else:
-                        file.cell(w=cols_width[j + 1], h=24, txt=str(0), border=1, align='C',
+                        file.cell(w=cols_width[j + 1], h=24, txt=str(data[j]), border=1, align='C',
                                   fill=data[j] == 0)
                 else:  # Перенос каретки после последней ячейки в таблице
                     total = str(sum(data[1:]))
@@ -112,7 +110,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 print(f'\t\tКомфорт-класс: {com}')
             if bus > 0:
                 print(f'\t\tБизнесс-класс: {bus}')
-        file.cell(-left_margin_table)  # Сброс отступа. Необходим для центрирования заголовка
+        file.cell(-left_margin)  # Сброс отступа. Необходим для центрирования заголовка
 
     # Сохранение pdf файла
     file.output(f'project/output/planes_data_'
@@ -131,7 +129,7 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
     if type(flights_dataframe) != pd.DataFrame:
         raise TypeError('Метод предназначен для обработки pandas.Dataframe')
     print(Clr.bold('ПОЛЕТЫ'))
-    print(f'Среднее время полета на основе {Clr.bold(len(flights_dataframe))} записей:')
+    print(f'Среднее время полета на основе {Clr.bold(str(len(flights_dataframe)))} записей:')
 
     # Получение полных перечней времени взлета и посадки бортов и отсечение нулевого смещения по часовому поясу
     departure_actual = [str(x)[:-6] for x in flights_dataframe[['actual_departure']]['actual_departure']]
@@ -159,7 +157,7 @@ def flights_data(flights_dataframe: pd.DataFrame) -> None:
 
     avg_delay_time = str(datetime.timedelta(seconds=np.average(delayed))).split('.')[0]
     flights_dataframe['delay'] = delay_time
-    res = f'Из {Clr.bold(len(departure_actual))} совершенных рейсов\n' \
+    res = f'Из {Clr.bold(str(len(departure_actual)))} совершенных рейсов\n' \
           f'\tВовремя вылетели: {in_time}'
     if in_time > 0:
         in_time_percent = "{:.3%}".format(in_time / len(departure_actual))
