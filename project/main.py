@@ -44,16 +44,20 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         for fare in fares:
             planes_dataframe.loc[planes_dataframe['aircraft_code'] == code, fare] = \
                 data.loc[data['fare_conditions'] == fare, 'count'].item()
+    # Список кортежей вида (название судна (str), мест в экономе (int), мест в комфорте (int), мест в бизнесе (int))
     res = [(x['en'], eco, com, bus) for x, eco, com, bus in
            zip(planes_dataframe['model'],
                planes_dataframe['Economy'],
                planes_dataframe['Comfort'],
                planes_dataframe['Business'])
-           ]  # Список кортежей вида (название судна, мест в экономе, мест в комфорте, мест в бизнесе)
+           ]
+    # Список уникальных авиасудов. Подразумевается, что у всех судов одной модели одинаковые салоны
     types = sorted(set(res), key=lambda x: x[0])
+    # Получение списка производителей
     prods = [
         x[0].split()[0] for x in types
-    ]  # Получение списка производителей
+    ]
+    # Словарь вида производитель: [количество судов производителя (int)]
     aircraft_by_producers = {x: [prods.count(x)] for x in air_prod if prods.count(x) > 0}
     for producer in aircraft_by_producers.keys():
         for board in types:
@@ -65,10 +69,10 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     for name in col_names:  # Вычисление ширины таблицы
         total_value_width += file.get_string_width(name) + 20
     left_margin = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа
-    file.c_margin = 0
     cols_width = []  # Список для хранения ширин столбцов
     for (producer, amount) in aircraft_by_producers.items():
-        file.set_left_margin(left_margin)
+        file.c_margin = 0  # Настройка отступа в ячейке для выравнивания текста
+        file.set_left_margin(left_margin)  # Установка левого отступа для создания ровных таблиц
         file.cell(w=0, h=37, txt=producer,
                   align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
         # Добавление ячеек с названиями столбцов
@@ -86,36 +90,41 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 width = file.get_string_width(col_names[i]) + 80  # Увеличенная ширина для корректной записи судов
                 file.cell(w=width, h=24, txt=col_names[i], border=1, align='C')
                 cols_width.append(width)  # Добавление ширины в список
+
         print(f'  {producer}: {amount[0]} ед.')
         for i in range(1, len(amount)):
             print(f'\t{Clr.bold(str(i))} {amount[i][0]}\n\t  Места:')
-            (eco, com, bus) = amount[i][1:]
+            (eco, com, bus) = amount[i][1:]  # Места в экономе, комфорте и бизнес-классе
+            file.set_font('times', size=18)  # Установка обычного шрифта TNR для заполнения строк таблицы
+            # Ячейка с порядковым индексом самолета по производителю
             file.cell(w=cols_width[0], h=24, txt=str(i), border=1, align='C')
+            file.c_margin = 10  # Настройка внутреннего отступа в ячейке для выравнивания текста
             data = amount[i]
             for j in range(len(data) + 1):
-                if j != 4:
-                    if j == 0:
-                        file.cell(w=cols_width[j + 1], h=24, txt=' '.join(data[j].split(' ')[1:]), border=1, align='C',
-                                  fill=data[j] == 0)
+                if j != 4:  # Логика для всех ячеек, кроме последней в строке
+                    if j == 0:  # Логика для первой после индекса ячейкт
+                        file.cell(w=cols_width[j + 1], h=24, txt=' '.join(data[j].split(' ')[1:]),
+                                  border=1, align='L', fill=data[j] == 0)
                     else:
-                        file.cell(w=cols_width[j + 1], h=24, txt=str(data[j]), border=1, align='C',
-                                  fill=data[j] == 0)
+                        file.cell(w=cols_width[j + 1], h=24, txt=str(data[j]),
+                                  border=1, align='R', fill=data[j] == 0)
                 else:  # Перенос каретки после последней ячейки в таблице
                     total = str(sum(data[1:]))
-                    file.cell(w=cols_width[j + 1], h=24, txt=total, border=1, align='C', ln=1)
-
+                    file.cell(w=cols_width[j + 1], h=24, txt=total, border=1, align='R', ln=1)
+            # Печать данных о количестве мест в консоль
             if eco > 0:
                 print(f'\t\tЭконом-класс: {eco}')
             if com > 0:
                 print(f'\t\tКомфорт-класс: {com}')
             if bus > 0:
-                print(f'\t\tБизнесс-класс: {bus}')
-        file.cell(-left_margin)  # Сброс отступа. Необходим для центрирования заголовка
+                print(f'\t\tБизнес-класс: {bus}')
+        file.cell(-left_margin)  # Сброс отступа. Необходим для корректного расположения заголовка
+        file.set_font('times b', size=18)  # Установка жирного шрифта для заголовка и названий столбцов таблицы
 
     # Сохранение pdf файла
     file.output(f'project/output/planes_data_'
                 f'{datetime.datetime.now().strftime("%d_%b_%Y_%H_%M_%S")}.pdf')
-    print(filler('='))
+    print(filler('='))  # Отделение данных в консоли
 
 
 # TODO Добавить генерацию красивых pdf-документов с отчетностью
