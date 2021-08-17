@@ -1,5 +1,5 @@
 # -*- coding: <utf-8> -*-
-
+import fpdf
 import psycopg2
 from psycopg2 import Error
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
@@ -81,90 +81,153 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     # fig.savefig('project/output/test.jpg')
 
     col_names = ('№', 'Судно', 'Эконом', 'Комфорт', 'Бизнес', 'Всего')  # Названия столбцов таблиц
-    total_value_width = 60  # Значение для добавления к общей ширине.
-    # Разница в ширине между столбцом с названием судна и остальными
+    total_value_width = 60  # Разница в ширине между столбцом с названием судна и остальными
     for name in col_names:  # Вычисление ширины таблицы
         total_value_width += file.get_string_width(name) + 20
     left_margin = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа для таблицы
     cols_width = []  # Список для хранения ширин столбцов
     seats_total = [0, 0, 0]  # Список для хранения общего количества мест в судах авиакомпании
+    seats_in_plane = (0, 0, 0)  # Общее количество мест в каждом из классов для производителя
     for (producer, amount) in aircraft_by_producers.items():
+        print(f'  {producer}: {amount[0]} ед.')  # Печать в консоль производителя и количества самолетов его сборки
         file.c_margin = 0  # Настройка отступа в ячейке для выравнивания текста
         file.set_left_margin(left_margin)  # Установка левого отступа для создания ровных таблиц
-        file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=producer,
-                  align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
-        # Добавление ячеек с названиями столбцов
-        for i in range(len(col_names)):
-            if i != 1:
-                if i < 5:  # Добавление ячеек таблицы
-                    width = file.get_string_width(col_names[i]) + 20
-                    file.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C')
-                    cols_width.append(width)  # Добавление ширины в список
-                else:  # Отдельная логика для крайней справа ячейки. Добавляется перенос строки
-                    file.set_fill_color(*Clr.FILL_GRAY)  # Заливка последней ячейки серым
-                    width = file.get_string_width(col_names[i]) + 20
-                    file.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C', ln=1, fill=True)
-                    cols_width.append(width)  # Добавление ширины в список
-                    file.set_fill_color(*Clr.FILL_RED)
-            else:
-                width = file.get_string_width(col_names[i]) + 80  # Увеличенная ширина для корректной записи судов
-                file.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C')
-                cols_width.append(width)  # Добавление ширины в список
-
-        print(f'  {producer}: {amount[0]} ед.')
-        seats_in_plane = [0, 0, 0]  # Общее количество мест в каждом из классов для производителя
-        for i in range(1, len(amount) + 1):
-            if i != len(amount):  # Заполнение всех строк таблицы, кроме подытога
-                print(f'\t{Clr.bold(str(i))} {amount[i][0]}\n\t  Места:')
-                (eco, com, bus) = amount[i][1:]  # Места в экономе, комфорте и бизнес-классе
-                seats_in_plane = [seats_in_plane[0] + eco, seats_in_plane[1] + com, seats_in_plane[2] + bus]
-                file.set_font('times', size=18)  # Установка обычного шрифта TNR для заполнения строк таблицы
-                # Ячейка с порядковым индексом самолета по производителю
-                file.cell(w=cols_width[0], h=CELL_HEIGHT_PDF, txt=str(i), border=1, align='C')
-                file.c_margin = 10  # Настройка внутреннего отступа в ячейке для выравнивания текста
-                data = amount[i]
-                # Заполнение строк таблицы
-                for j in range(len(data) + 1):
-                    if j != 4:  # Логика для всех ячеек, кроме последней в строке
+        # Суммарная высота таблицы для производителя с текстовым заголовком
+        total_producer_height = TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * (amount[0] + 1)
+        table_rows = amount[0] + 1
+        page_space_left = space_left(file)  # Высота оставшегося на странице свободного места
+        # Заполнение таблицы
+        if page_space_left - total_producer_height > 0:
+            # Если таблица и заголовок помещаются на текущей странице
+            file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=producer,
+                      align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
+            # Добавление ячеек с названиями столбцов
+            add_cols_names(file, col_names, cols_width)
+            # Проход по всем бортам производителя
+            for i in range(1, len(amount) + 1):
+                if i != len(amount):  # Заполнение всех строк таблицы, кроме подытога
+                    print(f'\t{Clr.bold(str(i))} {amount[i][0]}\n\t  Места:')
+                    (eco, com, bus) = amount[i][1:]  # Места в экономе, комфорте и бизнес-классе
+                    seats_in_plane = (seats_in_plane[0] + eco, seats_in_plane[1] + com, seats_in_plane[2] + bus)
+                    file.set_font('times', size=18)  # Установка обычного шрифта TNR для заполнения строк таблицы
+                    # Ячейка с порядковым индексом самолета по производителю
+                    file.cell(w=cols_width[0], h=CELL_HEIGHT_PDF, txt=str(i), border=1, align='C')
+                    file.c_margin = 10  # Настройка внутреннего отступа в ячейке для выравнивания текста
+                    data = amount[i]
+                    # Заполнение строк таблицы
+                    for j in range(len(data) + 1):
+                        file.set_fill_color(*Clr.FILL_RED)  # Настройка цвета для заливки нулевых ячеек красным
                         if j == 0:  # Логика для первой после индекса ячейки
                             file.cell(w=cols_width[j + 1], h=CELL_HEIGHT_PDF, txt=' '.join(data[j].split(' ')[1:]),
                                       border=1, align='L', fill=data[j] == 0)
                         else:
-                            file.cell(w=cols_width[j + 1], h=CELL_HEIGHT_PDF, txt=str(data[j]),
-                                      border=1, align='R', fill=data[j] == 0)
-                    else:  # Перенос каретки после последней ячейки в строке
+                            if j == len(data):  # Отдельная логика для последней ячейки строки
+                                file.set_fill_color(*Clr.FILL_GRAY)
+                                text = str(sum(data[1:]))
+                                is_fill = True
+                            else:
+                                text = str(data[j])
+                                is_fill = data[j] == 0
+                            file.cell(w=cols_width[j + 1], h=CELL_HEIGHT_PDF, txt=text,
+                                      border=1, align='R', fill=is_fill,
+                                      ln=1 if j == len(data) else 0)
+                    # Печать данных о количестве мест в самолете в консоль
+                    if eco > 0:
+                        print(f'\t\tЭконом-класс: {eco}')
+                    if com > 0:
+                        print(f'\t\tКомфорт-класс: {com}')
+                    if bus > 0:
+                        print(f'\t\tБизнес-класс: {bus}')
+
+                else:  # Заполнение строки таблицы с подытогом
+                    file.set_fill_color(*Clr.FILL_GRAY)
+                    for j in range(1, len(col_names)):
+                        if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
+                            if j == 1:  # Логика для первой ячейки (два столбца объединены)
+                                file.cell(w=sum(cols_width[j - 1:j + 1]), h=CELL_HEIGHT_PDF, txt='Всего',
+                                          border=1, align='L', fill=True)
+                            else:
+                                file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=str(seats_in_plane[j - 2]),
+                                          border=1, align='R', fill=True)
+                        else:  # Перенос каретки после последней ячейки в таблице
+                            total = str(sum(seats_in_plane))
+                            file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=total, border=1, align='R', ln=1,
+                                      fill=True)
+                    file.set_fill_color(*Clr.FILL_RED)
+
+        else:
+            # Если таблица не помещается на странице полностью
+            # Минимальная таблица - заголовок, названия столбцов и одна строка с данными
+            row = -1  # Индекс отображаемой строки таблицы
+            minimal_table_height = TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2
+            if page_space_left - minimal_table_height < 0:
+                # Если минимальная таблица не помещается на странице, то максимальное заполнение новой страницы
+                file.add_page()  # Создание новой страницы и переход на нее
+            file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=producer,
+                      align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
+            add_cols_names(file, col_names, cols_width)  # Добаление строки с названиями столбцов
+
+            while row < table_rows - 1:  # Пока не все строки таблицы добавлены в документ
+                page_space_left = space_left(file)  # Высота оставшегося на новой странице свободного места
+                if page_space_left - CELL_HEIGHT_PDF > 0:
+                    # Если есть место на еще одну строку таблицы
+                    if row != len(amount):
+                        # Если не строка с подытогом
+                        row += 1  # Увеличение количества отображенных строк таблицы
+                        data = amount[row]
+                        for i in range(len(data) + 1):
+                            # Проход по всем ячейкам строки
+                            file.set_fill_color(*Clr.FILL_RED)  # Настройка цвета для заливки нулевых ячеек красным
+                            if i == 0:  # Логика для первой после индекса ячейки
+                                file.cell(w=cols_width[i + 1], h=CELL_HEIGHT_PDF, txt=' '.join(data[i].split(' ')[1:]),
+                                          border=1, align='L', fill=data[i] == 0)
+                            else:
+                                if i == len(data):  # Отдельная логика для последней ячейки строки
+                                    file.set_fill_color(*Clr.FILL_GRAY)
+                                    text = str(sum(data[1:]))
+                                    is_fill = True
+                                else:
+                                    text = str(data[i])
+                                    is_fill = data[i] == 0
+                                file.cell(w=cols_width[i + 1], h=CELL_HEIGHT_PDF, txt=text,
+                                          border=1, align='R', fill=is_fill,
+                                          ln=1 if i == len(data) else 0)
+                        # Печать данных о количестве мест в самолете в консоль
+                        if eco > 0:
+                            print(f'\t\tЭконом-класс: {eco}')
+                        if com > 0:
+                            print(f'\t\tКомфорт-класс: {com}')
+                        if bus > 0:
+                            print(f'\t\tБизнес-класс: {bus}')
+                    else:
                         file.set_fill_color(*Clr.FILL_GRAY)
-                        total = str(sum(data[1:]))
-                        file.cell(w=cols_width[j + 1], h=CELL_HEIGHT_PDF, txt=total,
-                                  border=1, align='R', ln=1, fill=True)
+                        for j in range(1, len(col_names)):
+                            if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
+                                if j == 1:  # Логика для первой ячейки (два столбца объединены)
+                                    file.cell(w=sum(cols_width[j - 1:j + 1]), h=CELL_HEIGHT_PDF, txt='Всего',
+                                              border=1, align='L', fill=True)
+                                else:
+                                    file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=str(seats_in_plane[j - 2]),
+                                              border=1, align='R', fill=True)
+                            else:  # Перенос каретки после последней ячейки в таблице
+                                total = str(sum(seats_in_plane))
+                                file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=total, border=1, align='R', ln=1,
+                                          fill=True)
                         file.set_fill_color(*Clr.FILL_RED)
-                # Печать данных о количестве мест в консоль
-                if eco > 0:
-                    print(f'\t\tЭконом-класс: {eco}')
-                if com > 0:
-                    print(f'\t\tКомфорт-класс: {com}')
-                if bus > 0:
-                    print(f'\t\tБизнес-класс: {bus}')
-            else:  # Заполнение строки таблицы с подытогом
-                file.set_fill_color(*Clr.FILL_GRAY)
-                for j in range(1, len(col_names)):
-                    if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
-                        if j == 1:  # Логика для первой ячейки (два столбца объединены)
-                            file.cell(w=sum(cols_width[j-1:j+1]), h=CELL_HEIGHT_PDF, txt='Всего',
-                                      border=1, align='L', fill=True)
-                        else:
-                            file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=str(seats_in_plane[j-2]),
-                                      border=1, align='R', fill=True)
-                    else:  # Перенос каретки после последней ячейки в таблице
-                        total = str(sum(seats_in_plane))
-                        file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=total, border=1, align='R', ln=1, fill=True)
-                file.set_fill_color(*Clr.FILL_RED)
-        for k in range(len(seats_total)):  # Сохранение общего количества мест
-            seats_total[k] += seats_in_plane[k]
+
+                else:  # Если не хватает места на таблицу на созданной странице
+                    file.add_page()  # Создание новой таблицы и переход на нее
+                    add_cols_names(file, col_names, cols_width)  # Добавление названий столбцов первой строкой таблицы
+
+        for i in range(len(seats_total)):  # Сохранение общего количества мест
+            seats_total[i] += seats_in_plane[i]
         file.cell(-left_margin)  # Сброс отступа. Необходим для корректного расположения заголовка
         file.set_font('times b', size=18)  # Установка жирного шрифта для заголовка и названий столбцов таблицы
     file.set_fill_color(*Clr.FILL_GRAY)
     file.set_left_margin(left_margin)
+    page_space_left = space_left(file)
+    if page_space_left < TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2:
+        file.add_page()
     file.cell(w=0, h=TEXT_HEIGHT_PDF, txt='Итог',
               align='L', ln=1)  # Добавление в документ заголовка итоговой таблицы
     # Заполнение итоговой таблицы
@@ -383,6 +446,38 @@ def filler(symbol: str):
     # Разделитель подразделов
     else:
         return symbol * 50
+
+
+def add_cols_names(pdf: fpdf.FPDF, col_names: tuple, cols_width: list) -> None:
+    """
+    Функция для добавления заголовков столбцов в таблицу
+    :param pdf: pdf-документ для добавления
+    :param col_names: названия столбцов таблицы
+    :param cols_width: список ширин столбцов
+    :return: None
+    """
+    for i in range(len(col_names)):
+        pdf.set_fill_color(*Clr.FILL_GRAY)  # Установка цвета для заливки последней ячейки серым
+        if i != 1:
+            width = pdf.get_string_width(col_names[i]) + 20
+            pdf.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C', fill=i == len(col_names) - 1)
+            cols_width.append(width)  # Добавление ширины в список
+            if i == len(col_names) - 1:
+                pdf.ln()
+        else:
+            width = pdf.get_string_width(col_names[i]) + 80  # Увеличенная ширина для корректной записи судов
+            pdf.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C')
+            cols_width.append(width)  # Добавление ширины столбца в список
+
+
+def space_left(pdf: fpdf.FPDF) -> float:
+    """
+    Функция для вычисления высоты свободной рабочей области
+    :param pdf: pdf-документ для вычисления
+    :return: высота свободной рабочей области
+    """
+    space = pdf.h - pdf.t_margin - pdf.b_margin - pdf.get_y()
+    return space
 
 
 if __name__ == '__main__':
