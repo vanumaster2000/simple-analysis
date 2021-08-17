@@ -87,8 +87,8 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     left_margin = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа для таблицы
     cols_width = []  # Список для хранения ширин столбцов
     seats_total = [0, 0, 0]  # Список для хранения общего количества мест в судах авиакомпании
-    seats_in_plane = (0, 0, 0)  # Общее количество мест в каждом из классов для производителя
     for (producer, amount) in aircraft_by_producers.items():
+        seats_in_plane = (0, 0, 0)  # Общее количество мест в каждом из классов для производителя
         print(f'  {producer}: {amount[0]} ед.')  # Печать в консоль производителя и количества самолетов его сборки
         file.c_margin = 0  # Настройка отступа в ячейке для выравнивания текста
         file.set_left_margin(left_margin)  # Установка левого отступа для создания ровных таблиц
@@ -132,6 +132,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                                       border=1, align='R', fill=is_fill,
                                       ln=1 if j == len(data) else 0)
                     # Печать данных о количестве мест в самолете в консоль
+
                     if eco > 0:
                         print(f'\t\tЭконом-класс: {eco}')
                     if com > 0:
@@ -166,6 +167,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=producer,
                       align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
             add_cols_names(file, col_names, cols_width)  # Добаление строки с названиями столбцов
+            print(f'\t{Clr.bold(str(i))} {amount[i][0]}\n\t  Места:')
 
             while row < table_rows - 1:  # Пока не все строки таблицы добавлены в документ
                 page_space_left = space_left(file)  # Высота оставшегося на новой странице свободного места
@@ -173,8 +175,11 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     # Если есть место на еще одну строку таблицы
                     if row != len(amount):
                         # Если не строка с подытогом
+                        seats_in_plane = (0, 0, 0)  # Общее количество мест в каждом из классов для производителя
                         row += 1  # Увеличение количества отображенных строк таблицы
                         data = amount[row]
+                        (eco, com, bus) = data[1:]  # Места в экономе, комфорте и бизнес-классе
+                        seats_in_plane = (seats_in_plane[0] + eco, seats_in_plane[1] + com, seats_in_plane[2] + bus)
                         for i in range(len(data) + 1):
                             # Проход по всем ячейкам строки
                             file.set_fill_color(*Clr.FILL_RED)  # Настройка цвета для заливки нулевых ячеек красным
@@ -218,6 +223,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 else:  # Если не хватает места на таблицу на созданной странице
                     file.add_page()  # Создание новой таблицы и переход на нее
                     add_cols_names(file, col_names, cols_width)  # Добавление названий столбцов первой строкой таблицы
+
 
         for i in range(len(seats_total)):  # Сохранение общего количества мест
             seats_total[i] += seats_in_plane[i]
