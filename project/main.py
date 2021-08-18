@@ -254,27 +254,8 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
 
     # Сортировка словаря по уменьшению количества самолетов в использовании
     aircraft_by_producers = dict(sorted(aircraft_by_producers.items(), key=lambda val: val[1][0], reverse=True))
+    producers_bar_plot(aircraft_by_producers, file)  # Добавление столбчатой диаграммы к отчету
 
-    # Создание столбчатой диаграммы количества самолетов по производителям
-    fig, ax = plt.subplots()
-    x, y = aircraft_by_producers.keys(), [i[0] for i in aircraft_by_producers.values()]
-    ax.bar(x, y, color=(0, 0, 0, 0.5), width=5 / len(aircraft_by_producers) - 0.1)
-    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-    fig.set_figwidth(5)
-    fig.set_figheight(2)
-    fig.tight_layout()
-    directory = 'project/output/producers_plot.jpg'
-    fig.savefig(directory)
-
-    # Добавление графика в отчет
-    page_space_left = space_left(file)
-    if page_space_left - fig.get_figheight() * 100 - TEXT_HEIGHT_PDF <= 0:
-        file.add_page()
-    pdf_header(file, 'Количество самолетов по производителям')
-    file.image(directory, w=file.w - file.l_margin - file.r_margin, h=fig.get_figheight() * 100)
-    fig.clf()
-    if os.path.isfile(directory):
-        os.remove(directory)
     # Сохранение pdf файла с отчетом
     file.output(f'project/output/planes_data_'
                 f'{datetime.datetime.now().strftime("%d_%b_%Y_%H_%M_%S")}.pdf')
@@ -534,6 +515,37 @@ def pdf_header(pdf: fpdf.FPDF, text: str, allign: str = 'L') -> None:
     pdf.cell(w=0, h=TEXT_HEIGHT_PDF, txt=text,
              align=allign, ln=1)
     pdf.set_font('times', size=18)
+
+
+def producers_bar_plot(producers_data: dict, pdf: fpdf.FPDF) -> None:
+    """
+    Функция для создания столбчатой диаграммы количества самолетов по производителям
+    :param producers_data: словарь вида производитель: [количество самолетов, (название, места в экономе,
+    места в комфорте, места в бизнесе), ...]
+    :param pdf: объект fpdf.FPDF (документ отчета) для добавления диаграммы
+    :return: None
+    """
+    fig, ax = plt.subplots()
+    plt.xticks(rotation=45)
+    x, y = producers_data.keys(), [i[0] for i in producers_data.values()]
+    ax.bar(x, y, color=(0, 0, 0, 0.5), width=5 / len(producers_data) - 0.1)
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+    fig.set_figwidth(5)
+    fig.set_figheight(2.5)
+    fig.tight_layout()
+    directory = 'project/output/producers_plot.jpg'
+    fig.savefig(directory, dpi=1200)
+
+    # Добавление графика в отчет
+    page_space_left = space_left(pdf)
+    if page_space_left - fig.get_figheight() * 100 - TEXT_HEIGHT_PDF <= 0:
+        pdf.add_page()
+    pdf_header(pdf, 'Количество самолетов по производителям')
+    pdf.image(directory, w=pdf.w - pdf.l_margin - pdf.r_margin, h=fig.get_figheight() * 100)
+    fig.clf()
+    # Удаление созданного изображения из папки
+    if os.path.isfile(directory):
+        os.remove(directory)
 
 
 if __name__ == '__main__':
