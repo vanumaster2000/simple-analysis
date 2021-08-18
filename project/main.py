@@ -40,7 +40,9 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.add_font('times', '', 'project/static/tnr.ttf', uni=True)  # Normal Times New Roman font
     file.add_font('times b', '', 'project/static/tnrb.ttf', uni=True)  # Bold Times New Roman font
     file.set_font('times b', size=18)
+
     file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=title, align='C', ln=1)
+
     planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
     seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
     seats_data = seats.groupby('aircraft_code')['fare_conditions'].value_counts()
@@ -90,8 +92,10 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     for (producer, amount) in aircraft_by_producers.items():
         seats_in_plane = (0, 0, 0)  # Общее количество мест в каждом из классов для производителя
         print(f'  {producer}: {amount[0]} ед.')  # Печать в консоль производителя и количества самолетов его сборки
+
         file.c_margin = 0  # Настройка отступа в ячейке для выравнивания текста
         file.set_left_margin(left_margin)  # Установка левого отступа для создания ровных таблиц
+
         # Суммарная высота таблицы для производителя с текстовым заголовком
         total_producer_height = TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * (amount[0] + 1)
         table_rows = amount[0] + 1  # Количество строк таблицы, не считая заголовков столбцов
@@ -109,7 +113,9 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             # Проход по всем бортам производителя
             for i in range(1, len(amount) + 1):
                 if i != len(amount):  # Заполнение всех строк таблицы, кроме подытога
+
                     print(f'\t{Clr.bold(str(i))} {amount[i][0]}\n\t  Места:')
+
                     (eco, com, bus) = amount[i][1:]  # Места в экономе, комфорте и бизнес-классе
                     seats_in_plane = (seats_in_plane[0] + eco, seats_in_plane[1] + com, seats_in_plane[2] + bus)
                     file.set_font('times', size=18)  # Установка обычного шрифта TNR для заполнения строк таблицы
@@ -135,7 +141,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                                       border=1, align='R', fill=is_fill,
                                       ln=1 if j == len(data) else 0)
                     # Печать данных о количестве мест в самолете в консоль
-
                     print_seats(eco, com, bus)
 
                 else:  # Заполнение строки таблицы с подытогом
@@ -172,7 +177,9 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     # Если не строка с подытогом
                     pdf_index += 1
                     data = amount[pdf_index]
+
                     print(f'\t{Clr.bold(str(pdf_index))} {data[0]}\n\t  Места:')
+
                     (eco, com, bus) = data[1:]  # Места в экономе, комфорте и бизнес-классе
                     seats_in_plane = (seats_in_plane[0] + eco, seats_in_plane[1] + com, seats_in_plane[2] + bus)
                     for i in range(-1, len(data) + 1):
