@@ -14,6 +14,7 @@ from project.text_colors import Colors as Clr
 from fpdf import FPDF
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import os
 
 
 CELL_HEIGHT_PDF = 24  # Высота ячейки таблицы в pdf-отчете
@@ -41,8 +42,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.add_font('times b', '', 'project/static/tnrb.ttf', uni=True)  # Bold Times New Roman font
     file.set_font('times b', size=18)
 
-    file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=title, align='C', ln=1)
-
+    pdf_header(file, title, allign='C')
     planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
     seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
     seats_data = seats.groupby('aircraft_code')['fare_conditions'].value_counts()
@@ -72,16 +72,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             if board[0].startswith(producer):
                 aircraft_by_producers[producer].append(board)
 
-    # fig, ax = plt.subplots()
-    # x = aircraft_by_producers.keys()
-    # y = [i[0] for i in aircraft_by_producers.values()]
-    # ax.bar(x, y, color=(0, 0, 0, 0.5))
-    # ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
-    # fig.set_figwidth(4)
-    # fig.set_figheight(2)
-    # fig.tight_layout()
-    # fig.savefig('project/output/test.jpg')
-
     col_names = ('№', 'Судно', 'Эконом', 'Комфорт', 'Бизнес', 'Всего')  # Названия столбцов таблиц
     total_value_width = 60  # Разница в ширине между столбцом с названием судна и остальными
     for name in col_names:  # Вычисление ширины таблицы
@@ -105,8 +95,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             # Если таблица и заголовок помещаются на текущей странице
             # Добавление в документ заголовка с указанием производителя
             file.set_font('times b', size=18)
-            file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=producer,
-                      align='L', ln=1)
+            pdf_header(file, producer)
             file.set_font('times', size=18)
             # Добавление ячеек с названиями столбцов
             add_cols_names(file, col_names, cols_width)
@@ -166,9 +155,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             if page_space_left - minimal_table_height < 0:
                 # Если минимальная таблица не помещается на странице, то максимальное заполнение новой страницы
                 file.add_page()  # Создание новой страницы и переход на нее
-            file.set_font('times b', size=18)
-            file.cell(w=0, h=TEXT_HEIGHT_PDF, txt=producer,
-                      align='L', ln=1)  # Добавление в документ заголовка с указанием производителя
+            pdf_header(file, producer)  # Добавление в документ заголовка с указанием производителя
             add_cols_names(file, col_names, cols_width)  # Добаление строки с названиями столбцов
             while pdf_index != table_rows - 1:  # Пока не все строки таблицы добавлены в документ
                 page_space_left = space_left(file)  # Высота оставшегося на новой странице свободного места
@@ -229,7 +216,8 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                               fill=True)
             file.set_fill_color(*Clr.FILL_RED)
 
-        for k in range(len(seats_total)):  # Подсчет общего количества мест
+        # Подсчет общего количества мест
+        for k in range(len(seats_total)):
             seats_total[k] += seats_in_plane[k]
 
     file.cell(-left_margin)  # Сброс отступа. Необходим для корректного расположения заголовка
@@ -239,8 +227,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     page_space_left = space_left(file)
     if page_space_left < TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2:
         file.add_page()
-    file.cell(w=0, h=TEXT_HEIGHT_PDF, txt='Итог',
-              align='L', ln=1)  # Добавление в документ заголовка итоговой таблицы
+    pdf_header(file, 'Итог')  # Добавление в документ заголовка итоговой таблицы
     # Заполнение итоговой таблицы
     file.c_margin = 0
     for i in range(2):
@@ -263,7 +250,31 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                 else:
                     file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt='{:,}'.format(sum(seats_total)).replace(',', ' '),
                               border=1, ln=1, align='R', fill=True)
+    file.c_margin = 0
 
+    # Сортировка словаря по уменьшению количества самолетов в использовании
+    aircraft_by_producers = dict(sorted(aircraft_by_producers.items(), key=lambda val: val[1][0], reverse=True))
+
+    # Создание столбчатой диаграммы количества самолетов по производителям
+    fig, ax = plt.subplots()
+    x, y = aircraft_by_producers.keys(), [i[0] for i in aircraft_by_producers.values()]
+    ax.bar(x, y, color=(0, 0, 0, 0.5), width=5 / len(aircraft_by_producers) - 0.1)
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+    fig.set_figwidth(5)
+    fig.set_figheight(2)
+    fig.tight_layout()
+    directory = 'project/output/producers_plot.jpg'
+    fig.savefig(directory)
+
+    # Добавление графика в отчет
+    page_space_left = space_left(file)
+    if page_space_left - fig.get_figheight() * 100 - TEXT_HEIGHT_PDF <= 0:
+        file.add_page()
+    pdf_header(file, 'Количество самолетов по производителям')
+    file.image(directory, w=file.w - file.l_margin - file.r_margin, h=fig.get_figheight() * 100)
+    fig.clf()
+    if os.path.isfile(directory):
+        os.remove(directory)
     # Сохранение pdf файла с отчетом
     file.output(f'project/output/planes_data_'
                 f'{datetime.datetime.now().strftime("%d_%b_%Y_%H_%M_%S")}.pdf')
@@ -508,6 +519,21 @@ def print_seats(eco_seats: int, com_seats: int, bus_seats: int) -> None:
         print(f'\t\tКомфорт-класс: {com_seats}')
     if bus_seats > 0:
         print(f'\t\tБизнес-класс: {bus_seats}')
+
+
+def pdf_header(pdf: fpdf.FPDF, text: str, allign: str = 'L') -> None:
+    """
+    Функция для добавления текстовых заголовков в пдф-документ
+    :param pdf: объект fpdf.FDF (документ отчета)
+    :param text: текст для добавления в документ
+    :param allign: выравнивание текста ('L', 'C', 'R')
+    :return: None
+    """
+    pdf.c_margin = 0
+    pdf.set_font('times b', size=18)
+    pdf.cell(w=0, h=TEXT_HEIGHT_PDF, txt=text,
+             align=allign, ln=1)
+    pdf.set_font('times', size=18)
 
 
 if __name__ == '__main__':
