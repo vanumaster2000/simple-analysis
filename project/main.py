@@ -136,12 +136,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                                       ln=1 if j == len(data) else 0)
                     # Печать данных о количестве мест в самолете в консоль
 
-                    if eco > 0:
-                        print(f'\t\tЭконом-класс: {eco}')
-                    if com > 0:
-                        print(f'\t\tКомфорт-класс: {com}')
-                    if bus > 0:
-                        print(f'\t\tБизнес-класс: {bus}')
+                    print_seats(eco, com, bus)
 
                 else:  # Заполнение строки таблицы с подытогом
                     file.set_fill_color(*Clr.FILL_GRAY)
@@ -204,12 +199,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                                       border=1, align='R', fill=is_fill,
                                       ln=1 if i == len(data) else 0)
                     # Печать данных о количестве мест в самолете в консоль
-                    if eco > 0:
-                        print(f'\t\tЭконом-класс: {eco}')
-                    if com > 0:
-                        print(f'\t\tКомфорт-класс: {com}')
-                    if bus > 0:
-                        print(f'\t\tБизнес-класс: {bus}')
+                    print_seats(eco, com, bus)
 
                 else:  # Если не хватает места на таблицу на созданной странице
                     file.add_page()  # Создание новой таблицы и переход на нее
@@ -429,7 +419,7 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     business_tickets_amount = len(business_tickets)
     avg_price = business_tickets['price'].sum() / business_tickets_amount
 
-    print(f'\tВ бизнесс-класс: {"{:.2f}".format(avg_price)}')
+    print(f'\tВ бизнес-класс: {"{:.2f}".format(avg_price)}')
     print(filler('-'))
 
     total = economy_tickets_amount + business_tickets_amount + comfort_tickets_amount
@@ -440,7 +430,7 @@ def tickets_data(tickets_dataframe: pd.DataFrame) -> None:
     print(f'Из всех билетов куплено:\n'
           f'\tВ эконом-класс: {economy_tickets_amount} ({"{:.3%}".format(economy_percent)})\n'
           f'\tВ комфорт-класс: {comfort_tickets_amount} ({"{:.3%}".format(comfort_percent)})\n'
-          f'\tВ бизнесс-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
+          f'\tВ бизнес-класс: {business_tickets_amount} ({"{:.3%}".format(business_percent)})')
 
     print(filler('='))
 
@@ -495,6 +485,22 @@ def space_left(pdf: fpdf.FPDF) -> float:
     """
     space = pdf.h - pdf.t_margin - pdf.b_margin - pdf.get_y()
     return space
+
+
+def print_seats(eco_seats: int, com_seats: int, bus_seats: int) -> None:
+    """
+    Функция для печати количества мест разных классов в самолете
+    :param eco_seats: число мест в эконом-классе
+    :param com_seats: число мест в комфорт-классе
+    :param bus_seats: число мест в бизнес-классе
+    :return: None
+    """
+    if eco_seats > 0:
+        print(f'\t\tЭконом-класс: {eco_seats}')
+    if com_seats > 0:
+        print(f'\t\tКомфорт-класс: {com_seats}')
+    if bus_seats > 0:
+        print(f'\t\tБизнес-класс: {bus_seats}')
 
 
 if __name__ == '__main__':
