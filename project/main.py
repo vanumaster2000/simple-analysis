@@ -15,6 +15,7 @@ from fpdf import FPDF
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import os
+import pdf_functions as pf
 
 
 CELL_HEIGHT_PDF = 24  # Высота ячейки таблицы в pdf-отчете
@@ -42,7 +43,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.add_font('times b', '', 'project/static/tnrb.ttf', uni=True)  # Bold Times New Roman font
     file.set_font('times b', size=18)
 
-    pdf_header(file, title, allign='C')
+    PDFHelper.pdf_header(file, title, allign='C')
     planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
     seats = pd.read_sql("SELECT * FROM seats", connection).drop(['seat_no'], axis=1)  # Перечень мест для каждого борта
     seats_data = seats.groupby('aircraft_code')['fare_conditions'].value_counts()
@@ -89,16 +90,16 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         # Суммарная высота таблицы для производителя с текстовым заголовком
         total_producer_height = TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * (amount[0] + 1)
         table_rows = amount[0] + 1  # Количество строк таблицы, не считая заголовков столбцов
-        page_space_left = space_left(file)  # Высота оставшегося на странице свободного места
+        page_space_left = PDFHelper.space_left(file)  # Высота оставшегося на странице свободного места
         # Заполнение таблицы
         if page_space_left - total_producer_height > 0:
             # Если таблица и заголовок помещаются на текущей странице
             # Добавление в документ заголовка с указанием производителя
             file.set_font('times b', size=18)
-            pdf_header(file, producer)
+            PDFHelper.pdf_header(file, producer)
             file.set_font('times', size=18)
             # Добавление ячеек с названиями столбцов
-            add_cols_names(file, col_names, cols_width)
+            PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)
             # Проход по всем бортам производителя
             for i in range(1, len(amount) + 1):
                 if i != len(amount):  # Заполнение всех строк таблицы, кроме подытога
@@ -155,10 +156,10 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             if page_space_left - minimal_table_height < 0:
                 # Если минимальная таблица не помещается на странице, то максимальное заполнение новой страницы
                 file.add_page()  # Создание новой страницы и переход на нее
-            pdf_header(file, producer)  # Добавление в документ заголовка с указанием производителя
-            add_cols_names(file, col_names, cols_width)  # Добаление строки с названиями столбцов
+            PDFHelper.pdf_header(file, producer)  # Добавление в документ заголовка с указанием производителя
+            PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)  # Добаление строки с названиями столбцов
             while pdf_index != table_rows - 1:  # Пока не все строки таблицы добавлены в документ
-                page_space_left = space_left(file)  # Высота оставшегося на новой странице свободного места
+                page_space_left = PDFHelper.space_left(file)  # Высота оставшегося на новой странице свободного места
                 if page_space_left - CELL_HEIGHT_PDF > 0:
                     # Если есть место на еще одну строку таблицы
                     # Если не строка с подытогом
@@ -197,8 +198,9 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
 
                 else:  # Если не хватает места на таблицу на созданной странице
                     file.add_page()  # Создание новой таблицы и переход на нее
-                    add_cols_names(file, col_names, cols_width)  # Добавление названий столбцов первой строкой таблицы
-            page_space_left = space_left(file)
+                    # Добавление названий столбцов первой строкой таблицы
+                    PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)
+            page_space_left = PDFHelper.space_left(file)
             if page_space_left - CELL_HEIGHT_PDF <= 0:
                 file.add_page()
             file.set_fill_color(*Clr.FILL_GRAY)
@@ -224,10 +226,10 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.set_font('times b', size=18)  # Установка жирного шрифта для заголовка и названий столбцов таблицы
     file.set_fill_color(*Clr.FILL_GRAY)
     file.set_left_margin(left_margin)
-    page_space_left = space_left(file)
+    page_space_left = PDFHelper.space_left(file)
     if page_space_left < TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2:
         file.add_page()
-    pdf_header(file, 'Итог')  # Добавление в документ заголовка итоговой таблицы
+    PDFHelper.pdf_header(file, 'Итог')  # Добавление в документ заголовка итоговой таблицы
     # Заполнение итоговой таблицы
     file.c_margin = 0
     for i in range(2):
@@ -452,40 +454,6 @@ def filler(symbol: str):
         return symbol * 50
 
 
-def add_cols_names(pdf: fpdf.FPDF, col_names: tuple, cols_width: list) -> None:
-    """
-    Функция для добавления заголовков столбцов в таблицу
-    :param pdf: pdf-документ для добавления
-    :param col_names: названия столбцов таблицы
-    :param cols_width: список ширин столбцов
-    :return: None
-    """
-    pdf.set_font('times b', size=18)  # Установка жирного шрифта для наименований столбцов
-    for i in range(len(col_names)):
-        pdf.set_fill_color(*Clr.FILL_GRAY)  # Установка цвета для заливки последней ячейки серым
-        if i != 1:
-            width = pdf.get_string_width(col_names[i]) + 20
-            pdf.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C', fill=i == len(col_names) - 1)
-            cols_width.append(width)  # Добавление ширины в список
-            if i == len(col_names) - 1:
-                pdf.ln()
-        else:
-            width = pdf.get_string_width(col_names[i]) + 80  # Увеличенная ширина для корректной записи судов
-            pdf.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i], border=1, align='C')
-            cols_width.append(width)  # Добавление ширины столбца в список
-    pdf.set_font('times', size=18)  # Установка обычного шрифта для заполнения документа
-
-
-def space_left(pdf: fpdf.FPDF) -> float:
-    """
-    Функция для вычисления высоты свободной рабочей области
-    :param pdf: pdf-документ для вычисления
-    :return: высота свободной рабочей области
-    """
-    space = pdf.h - pdf.t_margin - pdf.b_margin - pdf.get_y()
-    return space
-
-
 def print_seats(eco_seats: int, com_seats: int, bus_seats: int) -> None:
     """
     Функция для печати количества мест разных классов в самолете
@@ -500,21 +468,6 @@ def print_seats(eco_seats: int, com_seats: int, bus_seats: int) -> None:
         print(f'\t\tКомфорт-класс: {com_seats}')
     if bus_seats > 0:
         print(f'\t\tБизнес-класс: {bus_seats}')
-
-
-def pdf_header(pdf: fpdf.FPDF, text: str, allign: str = 'L') -> None:
-    """
-    Функция для добавления текстовых заголовков в пдф-документ
-    :param pdf: объект fpdf.FDF (документ отчета)
-    :param text: текст для добавления в документ
-    :param allign: выравнивание текста ('L', 'C', 'R')
-    :return: None
-    """
-    pdf.c_margin = 0
-    pdf.set_font('times b', size=18)
-    pdf.cell(w=0, h=TEXT_HEIGHT_PDF, txt=text,
-             align=allign, ln=1)
-    pdf.set_font('times', size=18)
 
 
 def producers_bar_plot(producers_data: dict, pdf: fpdf.FPDF) -> None:
@@ -537,10 +490,10 @@ def producers_bar_plot(producers_data: dict, pdf: fpdf.FPDF) -> None:
     fig.savefig(directory, dpi=1200)
 
     # Добавление графика в отчет
-    page_space_left = space_left(pdf)
+    page_space_left = PDFHelper.space_left(pdf)
     if page_space_left - fig.get_figheight() * 100 - TEXT_HEIGHT_PDF <= 0:
         pdf.add_page()
-    pdf_header(pdf, 'Количество самолетов по производителям')
+    PDFHelper.pdf_header(pdf, 'Количество самолетов по производителям')
     pdf.image(directory, w=pdf.w - pdf.l_margin - pdf.r_margin, h=fig.get_figheight() * 100)
     fig.clf()
     # Удаление созданного изображения из папки
@@ -553,6 +506,7 @@ if __name__ == '__main__':
     pd.set_option('display.max_columns', 15)
     mp.freeze_support()
     Clr = Clr()
+    PDFHelper = pf.PDFHelper()
     try:
         connection = psycopg2.connect(
             host='localhost',
