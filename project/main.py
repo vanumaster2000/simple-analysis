@@ -18,6 +18,7 @@ import os
 import pdf_functions as pf
 
 
+# Константы скрипта
 CELL_HEIGHT_PDF = 24  # Высота ячейки таблицы в pdf-отчете
 TEXT_HEIGHT_PDF = 32  # Высота ячейки с текстом в pdf-отчете
 
@@ -61,15 +62,15 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                planes_dataframe['Business'])
            ]
     # Список уникальных авиасудов. Подразумевается, что у всех судов одной модели одинаковые салоны
-    types = sorted(set(res), key=lambda x: x[0])
+    boards = sorted(set(res), key=lambda x: x[0])
     # Получение списка производителей
     prods = [
-        x[0].split()[0] for x in types
+        x[0].split()[0] for x in boards
     ]
     # Словарь вида производитель: [количество судов производителя (int)]
     aircraft_by_producers = {x: [prods.count(x)] for x in air_prod if prods.count(x) > 0}
     for producer in aircraft_by_producers.keys():
-        for board in types:
+        for board in boards:
             if board[0].startswith(producer):
                 aircraft_by_producers[producer].append(board)
 
@@ -461,7 +462,15 @@ def print_seats(eco_seats: int, com_seats: int, bus_seats: int) -> None:
     :param com_seats: число мест в комфорт-классе
     :param bus_seats: число мест в бизнес-классе
     :return: None
+    :raises: TypeError
     """
+    # Проверка типов аргументов
+    seats = (eco_seats, com_seats, bus_seats)
+    seats_names = ('eco_seats', 'com_seats', 'bus_seats')
+    for i in range(len(seats)):
+        if type(seats[i]) != int:
+            raise TypeError(f'Метод print_seats()\n'
+                            f'{seats_names[i]} - ожидалось int, получено {type(seats[i])}.')
     if eco_seats > 0:
         print(f'\t\tЭконом-класс: {eco_seats}')
     if com_seats > 0:
@@ -477,7 +486,15 @@ def producers_bar_plot(producers_data: dict, pdf: fpdf.FPDF) -> None:
     места в комфорте, места в бизнесе), ...]
     :param pdf: объект fpdf.FPDF (документ отчета) для добавления диаграммы
     :return: None
+    :raises: TypeError
     """
+    # Проверка типов аргументов
+    if type(producers_data) != dict:
+        raise TypeError(f'Метод producers_bar_plot()\n'
+                        f'producer_data - ожидалось dict, получено {type(producers_data)}')
+    if type(pdf) != fpdf.FPDF:
+        raise TypeError(f'Метод producers_bar_plot()\n'
+                        f'pdf - ожидалось fpdf.FPDF, получено {type(producers_data)}')
     fig, ax = plt.subplots()
     plt.xticks(rotation=45)
     x, y = producers_data.keys(), [i[0] for i in producers_data.values()]
