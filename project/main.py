@@ -10,7 +10,7 @@ from project.producers import aircraft_producers as air_prod
 import datetime
 import multiprocessing as mp
 from project.multiprocessing_functions import mp_avg_flight_time, mp_delay_time
-from project.text_colors import Colors as Clr
+from project.colors_and_styles import Colors as Clr
 from fpdf import FPDF
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -81,6 +81,8 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     left_margin = round((file.w - total_value_width) / 2)  # Вычисление левого отступа документа для таблицы
     cols_width = []  # Список для хранения ширин столбцов
     seats_total = [0, 0, 0]  # Список для хранения общего количества мест в судах авиакомпании
+    # Словарь для хранения информации о общей вместимости бортов производителей
+    seats_by_producer = {x: 0 for x in aircraft_by_producers.keys()}
     for (producer, amount) in aircraft_by_producers.items():
         seats_in_plane = (0, 0, 0)  # Общее количество мест в каждом из классов для производителя
         print(f'  {producer}: {amount[0]} ед.')  # Печать в консоль производителя и количества самолетов его сборки
@@ -222,7 +224,8 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         # Подсчет общего количества мест
         for k in range(len(seats_total)):
             seats_total[k] += seats_in_plane[k]
-
+        # Сохранение количества мест для производителя
+        seats_by_producer[producer] = sum(seats_in_plane)
     file.cell(-left_margin)  # Сброс отступа. Необходим для корректного расположения заголовка
     file.set_font('times b', size=18)  # Установка жирного шрифта для заголовка и названий столбцов таблицы
     file.set_fill_color(*Clr.FILL_GRAY)
@@ -258,6 +261,9 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     # Сортировка словаря по уменьшению количества самолетов в использовании
     aircraft_by_producers = dict(sorted(aircraft_by_producers.items(), key=lambda val: val[1][0], reverse=True))
     producers_bar_plot(aircraft_by_producers, file)  # Добавление столбчатой диаграммы к отчету
+
+    values = {x: y for (x, y) in seats_by_producer.items()}
+    pie_plot(list(values.values()), list(values.keys()), 'test', file, additional_data=seats_by_producer)
 
     # Сохранение pdf файла с отчетом
     file.output(f'project/output/planes_data_'
@@ -498,7 +504,9 @@ def producers_bar_plot(producers_data: dict, pdf: fpdf.FPDF) -> None:
     fig, ax = plt.subplots()
     plt.xticks(rotation=45)
     x, y = producers_data.keys(), [i[0] for i in producers_data.values()]
-    ax.bar(x, y, color=(0, 0, 0, 0.5), width=5 / len(producers_data) - 0.1)
+    barlist = ax.bar(x, y, width=5 / len(producers_data) - 0.1)
+    for i in range(len(barlist)):
+        barlist[i].set_color(Clr.CHART_COLORS['RGBA'][i])
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
     fig.set_figwidth(5)
     fig.set_figheight(2.5)
@@ -511,6 +519,62 @@ def producers_bar_plot(producers_data: dict, pdf: fpdf.FPDF) -> None:
     if page_space_left - fig.get_figheight() * 100 - TEXT_HEIGHT_PDF <= 0:
         pdf.add_page()
     PDFHelper.pdf_header(pdf, 'Количество самолетов по производителям')
+    pdf.image(directory, w=pdf.w - pdf.l_margin - pdf.r_margin, h=fig.get_figheight() * 100)
+    fig.clf()
+    # Удаление созданного изображения из папки
+    if os.path.isfile(directory):
+        os.remove(directory)
+
+
+def pie_plot(vals: list, labels:list, name:str, pdf: fpdf.FPDF, additional_data: dict = None) -> None:
+    """
+    Функция для сохранения и добавления в отчет круговой диаграммы
+    :param vals: список значений
+    :param labels: список категорий
+    :param name: имя файла для сохранения
+    :param pdf: объект fpdf.FPDF (документ отчета) для добавления диаграммы
+    :param additional_data: дополнительные данные
+    :return: None
+    :raises: TypeError
+    """
+    # Проверка типов аргументов
+    if type(vals) != list:
+        raise TypeError(f'Метод pie_plot()\n'
+                        f'vals - ожидалось lsit, получено {type(vals)}')
+    if type(labels) != list:
+        raise TypeError(f'Метод pie_plot()\n'
+                        f'labels - ожидалось list, получено {type(labels)}')
+    if type(name) != str:
+        raise TypeError(f'Метод pie_plot()\n'
+                        f'name - ожидалось str, получено {type(name)}')
+    if additional_data and type(additional_data) != dict:
+        raise TypeError(f'Метод pie_plot()\n'
+                        f'additional_data - ожидалось dict, получено {type(additional_data)}')
+    if len(vals) != len(labels):
+        raise ValueError(f'Метод pie_plot()\n'
+                         f'Размеры vals и labels не совпадают')
+
+    fig, ax = plt.subplots()
+    patches, texts = ax.pie(vals, labels=labels, colors=Clr.CHART_COLORS['hex'])
+    for element in texts:
+        element.set_fontsize(10)
+    fig.set_figwidth(5)
+    fig.set_figheight(2.5)
+    if additional_data:
+        additional_data = dict(sorted(additional_data.items(), key=lambda item: item[1], reverse=True))
+        total_boards = sum(x[1] for x in additional_data.items())
+        percents = ('{:.3%}'.format(x[1] / total_boards) for x in additional_data.items())
+        labels = [f'{x[0]}: {x[1]} ({z})' for (x, z) in zip(additional_data.items(), percents)]
+    plt.legend(patches, labels, loc='upper left', bbox_to_anchor=(1, 1))
+    plt.tight_layout()
+    directory = 'project/output/' + str(name) + '_pie_plot.jpg'
+    fig.savefig(directory, dpi=1200, bbox_inches='tight')
+
+    # Добавление графика в отчет
+    page_space_left = PDFHelper.space_left(pdf)
+    if page_space_left - fig.get_figheight() * 100 - TEXT_HEIGHT_PDF <= 0:
+        pdf.add_page()
+    PDFHelper.pdf_header(pdf, 'Процентное содержание мест по производителям судов')
     pdf.image(directory, w=pdf.w - pdf.l_margin - pdf.r_margin, h=fig.get_figheight() * 100)
     fig.clf()
     # Удаление созданного изображения из папки
