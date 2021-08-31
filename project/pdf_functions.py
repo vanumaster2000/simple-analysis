@@ -1,11 +1,11 @@
 import fpdf
 from project.main import CELL_HEIGHT_PDF, TEXT_HEIGHT_PDF
-import text_colors
+import colors_and_styles
 
 
 class PDFHelper:
     # noinspection PyMethodMayBeStatic
-    def add_cols_names(self, pdf: fpdf.FPDF, col_names: tuple, cols_width: list, clr: text_colors.Colors) -> None:
+    def add_cols_names(self, pdf: fpdf.FPDF, col_names: tuple, cols_width: list, clr: colors_and_styles.Colors) -> None:
         """
         Функция для добавления заголовков столбцов в таблицу
         :param pdf: pdf-документ для добавления
