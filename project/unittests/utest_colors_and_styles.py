@@ -1,5 +1,5 @@
 from unittest import TestCase
-from project.text_colors import Colors
+from project.colors_and_styles import Colors
 
 
 class TestColors(TestCase):
