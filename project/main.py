@@ -42,7 +42,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.set_auto_page_break(False)
     file.add_font('times', '', 'project/static/tnr.ttf', uni=True)  # Normal Times New Roman font
     file.add_font('times b', '', 'project/static/tnrb.ttf', uni=True)  # Bold Times New Roman font
-    file.set_font('times b', size=18)
 
     PDFHelper.pdf_header(file, title, allign='C')
     planes_dataframe = planes_dataframe.drop(['range'], axis=1).assign(Economy=0, Comfort=0, Business=0)
@@ -98,9 +97,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         if page_space_left - total_producer_height > 0:
             # Если таблица и заголовок помещаются на текущей странице
             # Добавление в документ заголовка с указанием производителя
-            file.set_font('times b', size=18)
             PDFHelper.pdf_header(file, producer)
-            file.set_font('times', size=18)
             # Добавление ячеек с названиями столбцов
             PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)
             # Проход по всем бортам производителя
