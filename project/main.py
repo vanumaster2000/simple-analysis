@@ -263,7 +263,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     producers_bar_plot(aircraft_by_producers, file)  # Добавление столбчатой диаграммы к отчету
 
     values = {x: y for (x, y) in seats_by_producer.items()}
-    pie_plot(list(values.values()), list(values.keys()), 'test', file, additional_data=seats_by_producer)
+    pie_plot(list(values.values()), list(values.keys()), 'seats_by_prod', file, additional_data=seats_by_producer)
 
     # Сохранение pdf файла с отчетом
     file.output(f'project/output/planes_data_'
