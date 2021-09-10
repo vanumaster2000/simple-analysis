@@ -16,7 +16,7 @@ class PDFHelper:
         """
         pdf.set_font('times b', size=18)  # Установка жирного шрифта для наименований столбцов
         for i in range(len(col_names)):
-            pdf.set_fill_color(*clr.FILL_GRAY)  # Установка цвета для заливки последней ячейки серым
+            pdf.set_fill_color(*clr.CELL_COLORS['gray'])  # Установка цвета для заливки последней ячейки серым
             if i != 1:
                 width = pdf.get_string_width(col_names[i]) + 20
                 pdf.cell(w=width, h=CELL_HEIGHT_PDF, txt=col_names[i],
