@@ -37,7 +37,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     title = 'ИСПОЛЬЗУЕМЫЙ ФЛОТ АВИАСУДОВ'
     print(Clr.bold(title))
     file = FPDF(unit='pt', format='A4')  # Все измерения и координаты в документе - в пикселях
-    file.set_fill_color(*Clr.FILL_RED)  # Настройка цвета заливки ячеек таблицы (красный)
+    file.set_fill_color(*Clr.CELL_COLORS['RED'])  # Настройка цвета заливки ячеек таблицы (красный)
     file.add_page()
     file.set_auto_page_break(False)
     file.add_font('times', '', 'project/static/tnr.ttf', uni=True)  # Normal Times New Roman font
@@ -118,13 +118,13 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     data = amount[i]
                     # Заполнение строк таблицы
                     for j in range(len(data) + 1):
-                        file.set_fill_color(*Clr.FILL_RED)  # Настройка цвета для заливки нулевых ячеек красным
+                        file.set_fill_color(*Clr.CELL_COLORS['RED'])  # Настройка заливки нулевых ячеек красным
                         if j == 0:  # Логика для первой после индекса ячейки
                             file.cell(w=cols_width[j + 1], h=CELL_HEIGHT_PDF, txt=' '.join(data[j].split(' ')[1:]),
                                       border=1, align='L', fill=data[j] == 0)
                         else:
                             if j == len(data):  # Отдельная логика для последней ячейки строки
-                                file.set_fill_color(*Clr.FILL_GRAY)
+                                file.set_fill_color(*Clr.CELL_COLORS['GRAY'])
                                 text = str(sum(data[1:]))
                                 is_fill = True
                             else:
@@ -137,7 +137,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     print_seats(eco, com, bus)
 
                 else:  # Заполнение строки таблицы с подытогом
-                    file.set_fill_color(*Clr.FILL_GRAY)
+                    file.set_fill_color(*Clr.CELL_COLORS['GRAY'])
                     for j in range(1, len(col_names)):
                         if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
                             if j == 1:  # Логика для первой ячейки (два столбца объединены)
@@ -150,7 +150,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                             total = str(sum(seats_in_plane))
                             file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=total, border=1, align='R', ln=1,
                                       fill=True)
-                    file.set_fill_color(*Clr.FILL_RED)
+                    file.set_fill_color(*Clr.CELL_COLORS['RED'])
         else:
             # Если таблица не помещается на странице полностью
             # Минимальная таблица - заголовок, названия столбцов и одна строка с данными
@@ -175,7 +175,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     seats_in_plane = (seats_in_plane[0] + eco, seats_in_plane[1] + com, seats_in_plane[2] + bus)
                     for i in range(-1, len(data) + 1):
                         # Проход по всем ячейкам строки
-                        file.set_fill_color(*Clr.FILL_RED)  # Настройка цвета для заливки нулевых ячеек красным
+                        file.set_fill_color(*Clr.CELL_COLORS['RED'])  # Настройка заливки нулевых ячеек красным
                         file.set_font('times', size=18)
                         if i == -1:  # Логика для ячейки индекса
                             file.c_margin = 0
@@ -187,7 +187,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                                       border=1, align='L', fill=data[i] == 0)
                         else:
                             if i == len(data):  # Отдельная логика для последней ячейки строки
-                                file.set_fill_color(*Clr.FILL_GRAY)
+                                file.set_fill_color(*Clr.CELL_COLORS['GRAY'])
                                 text = str(sum(data[1:]))
                                 is_fill = True
                             else:
@@ -206,7 +206,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             page_space_left = PDFHelper.space_left(file)
             if page_space_left - CELL_HEIGHT_PDF <= 0:
                 file.add_page()
-            file.set_fill_color(*Clr.FILL_GRAY)
+            file.set_fill_color(*Clr.CELL_COLORS['GRAY'])
             for j in range(1, len(col_names)):
                 if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
                     if j == 1:  # Логика для первой ячейки (два столбца объединены)
@@ -219,7 +219,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     total = str(sum(seats_in_plane))
                     file.cell(w=cols_width[j], h=CELL_HEIGHT_PDF, txt=total, border=1, align='R', ln=1,
                               fill=True)
-            file.set_fill_color(*Clr.FILL_RED)
+            file.set_fill_color(*Clr.CELL_COLORS['RED'])
 
         # Подсчет общего количества мест
         for k in range(len(seats_total)):
@@ -228,7 +228,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         seats_by_producer[producer] = sum(seats_in_plane)
     file.cell(-left_margin)  # Сброс отступа. Необходим для корректного расположения заголовка
     file.set_font('times b', size=18)  # Установка жирного шрифта для заголовка и названий столбцов таблицы
-    file.set_fill_color(*Clr.FILL_GRAY)
+    file.set_fill_color(*Clr.CELL_COLORS['GRAY'])
     file.set_left_margin(left_margin)
     page_space_left = PDFHelper.space_left(file)
     if page_space_left < TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2:
