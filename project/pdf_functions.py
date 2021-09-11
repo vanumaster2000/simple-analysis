@@ -7,7 +7,7 @@ class PDFHelper:
     # noinspection PyMethodMayBeStatic
     def add_cols_names(self, pdf: fpdf.FPDF, col_names: tuple, cols_width: list, clr: colors_and_styles.Colors) -> None:
         """
-        Функция для добавления заголовков столбцов в таблицу
+        Метод для добавления заголовков столбцов в таблицу
         :param pdf: pdf-документ для добавления
         :param col_names: названия столбцов таблицы
         :param cols_width: список ширин столбцов
@@ -33,7 +33,7 @@ class PDFHelper:
     # noinspection PyMethodMayBeStatic
     def space_left(self, pdf: fpdf.FPDF) -> float:
         """
-        Функция для вычисления высоты свободной рабочей области
+        Метод для вычисления высоты свободной рабочей области
         :param pdf: pdf-документ для вычисления
         :return: высота свободной рабочей области
         """
@@ -43,7 +43,7 @@ class PDFHelper:
     # noinspection PyMethodMayBeStatic
     def pdf_header(self, pdf: fpdf.FPDF, text: str, allign: str = 'L') -> None:
         """
-        Функция для добавления текстовых заголовков в пдф-документ
+        Метод для добавления текстовых заголовков в пдф-документ
         :param pdf: объект fpdf.FDF (документ отчета)
         :param text: текст для добавления в документ
         :param allign: выравнивание текста ('L', 'C', 'R')
@@ -54,3 +54,17 @@ class PDFHelper:
         pdf.cell(w=0, h=TEXT_HEIGHT_PDF, txt=text,
                  align=allign, ln=1)
         pdf.set_font('times', size=18)
+
+    def can_fit(self, pdf: fpdf.FPDF, height, auto_add: bool = False) -> bool:
+        """
+        Метод для проверки возможности помещения целиком объекта на лист
+        :param pdf: объект fpdf.FDF (документ отчета)
+        :param height: высота добавляемого объекта
+        :param auto_add: флаг для автоматического добавления страницы в случае если объект не помещается на листе
+        :return: логическое значение (помещается / не помещается)
+        """
+        if self.space_left(pdf) - height < 0:
+            if auto_add:
+                pdf.add_page()
+            return False
+        return True
