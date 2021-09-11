@@ -72,7 +72,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         for board in boards:
             if board[0].startswith(producer):
                 aircraft_by_producers[producer].append(board)
-
     col_names = ('№', 'Судно', 'Эконом', 'Комфорт', 'Бизнес', 'Всего')  # Названия столбцов таблиц
     total_value_width = 60  # Разница в ширине между столбцом с названием судна и остальными
     for name in col_names:  # Вычисление ширины таблицы
@@ -92,10 +91,9 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
         # Суммарная высота таблицы для производителя с текстовым заголовком
         total_producer_height = TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * (amount[0] + 1)
         table_rows = amount[0] + 1  # Количество строк таблицы, не считая заголовков столбцов
-        page_space_left = PDFHelper.space_left(file)  # Высота оставшегося на странице свободного места
         # Заполнение таблицы
-        if page_space_left - total_producer_height > 0:
-            # Если таблица и заголовок помещаются на текущей странице
+        if PDFHelper.fit(file, total_producer_height, auto_add=False):
+            # Если таблица и заголовок полностью помещаются на текущей странице
             # Добавление в документ заголовка с указанием производителя
             PDFHelper.pdf_header(file, producer)
             # Добавление ячеек с названиями столбцов
@@ -153,14 +151,12 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             # Минимальная таблица - заголовок, названия столбцов и одна строка с данными
             pdf_index = 0  # Индекс отображаемой строки таблицы
             minimal_table_height = TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2
-            if page_space_left - minimal_table_height < 0:
-                # Если минимальная таблица не помещается на странице, то максимальное заполнение новой страницы
-                file.add_page()  # Создание новой страницы и переход на нее
+            PDFHelper.fit(file, minimal_table_height, auto_add=True)
             PDFHelper.pdf_header(file, producer)  # Добавление в документ заголовка с указанием производителя
             PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)  # Добаление строки с названиями столбцов
             while pdf_index != table_rows - 1:  # Пока не все строки таблицы добавлены в документ
                 page_space_left = PDFHelper.space_left(file)  # Высота оставшегося на новой странице свободного места
-                if page_space_left - CELL_HEIGHT_PDF > 0:
+                if PDFHelper.fit(file, CELL_HEIGHT_PDF, auto_add=False):
                     # Если есть место на еще одну строку таблицы
                     # Если не строка с подытогом
                     pdf_index += 1
@@ -197,12 +193,11 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     print_seats(eco, com, bus)
 
                 else:  # Если не хватает места на таблицу на созданной странице
-                    file.add_page()  # Создание новой таблицы и переход на нее
+                    PDFHelper.fit(file, CELL_HEIGHT_PDF, auto_add=True)
                     # Добавление названий столбцов первой строкой таблицы
                     PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)
             page_space_left = PDFHelper.space_left(file)
-            if page_space_left - CELL_HEIGHT_PDF <= 0:
-                file.add_page()
+            PDFHelper.fit(file, CELL_HEIGHT_PDF, auto_add=True)
             file.set_fill_color(*Clr.CELL_COLORS['gray'])
             for j in range(1, len(col_names)):
                 if j != len(col_names) - 1:  # Логика для всех ячеек, кроме последней в строке
@@ -228,8 +223,7 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.set_fill_color(*Clr.CELL_COLORS['gray'])
     file.set_left_margin(left_margin)
     page_space_left = PDFHelper.space_left(file)
-    if page_space_left < TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2:
-        file.add_page()
+    PDFHelper.fit(file, TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2, auto_add=True)
     PDFHelper.pdf_header(file, 'Итог')  # Добавление в документ заголовка итоговой таблицы
     # Заполнение итоговой таблицы
     file.c_margin = 0
