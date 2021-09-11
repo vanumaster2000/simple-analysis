@@ -155,7 +155,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
             PDFHelper.pdf_header(file, producer)  # Добавление в документ заголовка с указанием производителя
             PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)  # Добаление строки с названиями столбцов
             while pdf_index != table_rows - 1:  # Пока не все строки таблицы добавлены в документ
-                page_space_left = PDFHelper.space_left(file)  # Высота оставшегося на новой странице свободного места
                 if PDFHelper.fit(file, CELL_HEIGHT_PDF, auto_add=False):
                     # Если есть место на еще одну строку таблицы
                     # Если не строка с подытогом
@@ -196,7 +195,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
                     PDFHelper.fit(file, CELL_HEIGHT_PDF, auto_add=True)
                     # Добавление названий столбцов первой строкой таблицы
                     PDFHelper.add_cols_names(file, col_names, cols_width, clr=Clr)
-            page_space_left = PDFHelper.space_left(file)
             PDFHelper.fit(file, CELL_HEIGHT_PDF, auto_add=True)
             file.set_fill_color(*Clr.CELL_COLORS['gray'])
             for j in range(1, len(col_names)):
@@ -222,7 +220,6 @@ def planes_data(planes_dataframe: pd.DataFrame) -> None:
     file.set_font('times b', size=18)  # Установка жирного шрифта для заголовка и названий столбцов таблицы
     file.set_fill_color(*Clr.CELL_COLORS['gray'])
     file.set_left_margin(left_margin)
-    page_space_left = PDFHelper.space_left(file)
     PDFHelper.fit(file, TEXT_HEIGHT_PDF + CELL_HEIGHT_PDF * 2, auto_add=True)
     PDFHelper.pdf_header(file, 'Итог')  # Добавление в документ заголовка итоговой таблицы
     # Заполнение итоговой таблицы
