@@ -55,7 +55,7 @@ class PDFHelper:
                  align=allign, ln=1)
         pdf.set_font('times', size=18)
 
-    def can_fit(self, pdf: fpdf.FPDF, height, auto_add: bool = False) -> bool:
+    def fit(self, pdf: fpdf.FPDF, height, auto_add: bool = False) -> bool:
         """
         Метод для проверки возможности помещения целиком объекта на лист
         :param pdf: объект fpdf.FDF (документ отчета)
