@@ -17,7 +17,7 @@ import matplotlib.ticker as ticker
 import os
 import pdf_functions as pf
 
-
+d = 3
 # Константы скрипта
 CELL_HEIGHT_PDF = 24  # Высота ячейки таблицы в pdf-отчете
 TEXT_HEIGHT_PDF = 32  # Высота ячейки с текстом в pdf-отчете
